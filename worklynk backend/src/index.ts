@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import path from 'path';
 import { connectDB } from './config/db';
 
 dotenv.config();
@@ -40,9 +41,14 @@ app.use((req: any, res, next) => {
 
 // Import Routes
 import authRoutes from './routes/authRoutes';
+import profileRoutes from './routes/profileRoutes';
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
+
+// Serve static profile photos securely (helmet cross-origin resource policy setup might block, standard static serving)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health Check Endpoint
 app.get('/health', (req: Request, res: Response) => {
