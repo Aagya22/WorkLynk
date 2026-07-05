@@ -1,13 +1,13 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 
 export interface ILeave extends Document {
-  employeeId: Schema.Types.ObjectId;
+  employeeId: Types.ObjectId;
   leaveType: 'annual' | 'sick' | 'emergency' | 'unpaid';
   startDate: Date;
   endDate: Date;
   reason: string;
-  status: 'pending' | 'approved' | 'rejected';
-  decidedBy: Schema.Types.ObjectId | null;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  decidedBy: Types.ObjectId | null;
   decisionComment: string | null;
   decidedAt: Date | null;
   createdAt: Date;
@@ -41,7 +41,7 @@ const LeaveSchema = new Schema<ILeave>({
   },
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
+    enum: ['pending', 'approved', 'rejected', 'cancelled'],
     default: 'pending'
   },
   decidedBy: {

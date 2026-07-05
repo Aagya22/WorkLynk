@@ -42,12 +42,14 @@ app.use((req: any, res, next) => {
 // Import Routes
 import authRoutes from './routes/authRoutes';
 import profileRoutes from './routes/profileRoutes';
+import payslipRoutes from './routes/payslipRoutes';
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/payslips', payslipRoutes);
 
-// Serve static profile photos securely (helmet cross-origin resource policy setup might block, standard static serving)
+// Serve static profile photos securely
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health Check Endpoint
