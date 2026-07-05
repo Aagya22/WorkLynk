@@ -1,4 +1,6 @@
 import { Response } from 'express';
+import fs from 'fs';
+import path from 'path';
 import { Profile } from '../models/profile.model';
 import { User } from '../models/user.model';
 import { AuditLog } from '../models/audit-log.model';
@@ -204,5 +206,57 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
     });
   } catch (error: any) {
     return res.status(500).json({ message: 'Error updating profile.', error: error.message });
+  }
+};
+
+export const uploadProfilePhoto = async (req: AuthenticatedRequest, res: Response) => {
+  const { userId } = req.params;
+  const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+
+  try {
+    const profile = await Profile.findOne({ userId });
+    if (!profile) {
+      return res.status(404).json({ message: 'Profile not found.' });
+    }
+
+    const isOwner = req.user!._id.toString() === profile.userId.toString();
+    if (req.user!.role === 'employee' && !isOwner) {
+      return res.status(403).json({ message: 'Access denied: You cannot modify this profile.' });
+    }
+
+    const savedPath = (req as any).savedFilePath;
+    if (!savedPath) {
+      return res.status(400).json({ message: 'File upload failed.' });
+    }
+
+    if (profile.profilePhotoPath) {
+      const oldPath = path.join(__dirname, '../..', profile.profilePhotoPath);
+      if (fs.existsSync(oldPath)) {
+        try {
+          fs.unlinkSync(oldPath);
+        } catch (e) {
+          console.error('Failed to delete old photo:', e);
+        }
+      }
+    }
+
+    profile.profilePhotoPath = savedPath;
+    await profile.save();
+
+    await AuditLog.create({
+      userId: req.user!._id,
+      actionType: 'PROFILE_PHOTO_UPLOAD',
+      targetResource: `profile:${profile._id}`,
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'] || 'unknown',
+      metadata: { targetUserId: userId, path: savedPath }
+    });
+
+    return res.status(200).json({
+      message: 'Profile photo uploaded successfully.',
+      profilePhotoPath: savedPath
+    });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Error uploading profile photo.', error: error.message });
   }
 };
