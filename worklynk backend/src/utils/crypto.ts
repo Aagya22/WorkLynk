@@ -1,7 +1,10 @@
 import crypto from 'crypto';
 
 const getEncryptionKey = (): Buffer => {
-  const secret = process.env.ENCRYPTION_KEY || 'worklynk_local_fallback_encryption_key_2026';
+  const secret = process.env.ENCRYPTION_KEY;
+  if (!secret) {
+    throw new Error('FATAL ERROR: ENCRYPTION_KEY is not defined in the environment variables.');
+  }
   // Standardize the key to exactly 32 bytes using SHA-256
   return crypto.createHash('sha256').update(secret).digest();
 };

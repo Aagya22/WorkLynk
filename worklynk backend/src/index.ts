@@ -20,6 +20,30 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Custom cookie-parsing middleware to avoid external dependencies
+app.use((req: any, res, next) => {
+  const cookieHeader = req.headers.cookie;
+  const cookies: Record<string, string> = {};
+  if (cookieHeader) {
+    cookieHeader.split(';').forEach((cookie: string) => {
+      const parts = cookie.split('=');
+      const name = parts[0].trim();
+      const value = parts.slice(1).join('=');
+      if (name && value) {
+        cookies[name] = decodeURIComponent(value);
+      }
+    });
+  }
+  req.cookies = cookies;
+  next();
+});
+
+// Import Routes
+import authRoutes from './routes/authRoutes';
+
+// Mount Routes
+app.use('/api/auth', authRoutes);
+
 // Health Check Endpoint
 app.get('/health', (req: Request, res: Response) => {
   res.json({
