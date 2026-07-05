@@ -1,0 +1,35 @@
+import express, { Request, Response } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 5001;
+
+// Security Middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5000',
+  credentials: true
+}));
+app.use(express.json());
+
+// Health Check Endpoint
+app.get('/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    service: 'worklynk-backend'
+  });
+});
+
+// Default API route
+app.get('/api', (req: Request, res: Response) => {
+  res.json({ message: 'Welcome to the Worklynk Secure API' });
+});
+
+app.listen(PORT, () => {
+  console.log(`[server]: Secure backend is running on port ${PORT}`);
+});
