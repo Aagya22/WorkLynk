@@ -12,20 +12,20 @@ import {
   getMe
 } from '../controllers/authController';
 import { protect, restrictTo } from '../middlewares/authMiddleware';
-import { loginLimiter } from '../middlewares/rateLimit';
+import { authLimiter, mfaSetupLimiter } from '../middlewares/rateLimit';
 
 const router = Router();
 
 // Public Routes
-router.post('/login', loginLimiter, login);
-router.post('/mfa/verify', verifyMFA);
+router.post('/login', authLimiter, login);
+router.post('/mfa/verify', mfaSetupLimiter, verifyMFA);
 router.post('/refresh', refresh);
 router.post('/force-change-password', forceChangePassword);
 
 // Authenticated Routes
 router.get('/me', protect, getMe);
-router.post('/mfa/setup', protect, setupMFA);
-router.post('/mfa/enable', protect, enableMFA);
+router.post('/mfa/setup', protect, mfaSetupLimiter, setupMFA);
+router.post('/mfa/enable', protect, mfaSetupLimiter, enableMFA);
 router.post('/logout', protect, logout);
 router.put('/change-password', protect, changePassword);
 

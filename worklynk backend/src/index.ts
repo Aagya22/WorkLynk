@@ -44,12 +44,14 @@ import authRoutes from './routes/authRoutes';
 import profileRoutes from './routes/profileRoutes';
 import payslipRoutes from './routes/payslipRoutes';
 import leaveRoutes from './routes/leaveRoutes';
+import auditRoutes from './routes/auditRoutes';
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/payslips', payslipRoutes);
 app.use('/api/leaves', leaveRoutes);
+app.use('/api/audit-logs', auditRoutes);
 
 // Serve static profile photos securely
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
