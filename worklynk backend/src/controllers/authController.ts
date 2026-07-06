@@ -70,7 +70,8 @@ export const register = async (req: AuthenticatedRequest, res: Response) => {
       }
     });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Internal server error during registration.', error: error.message });
+    console.error('Error during registration:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -206,7 +207,8 @@ export const login = async (req: AuthenticatedRequest, res: Response) => {
       }
     });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Internal server error during login.', error: error.message });
+    console.error('Error during login:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -307,7 +309,8 @@ export const verifyMFA = async (req: AuthenticatedRequest, res: Response) => {
       }
     });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Internal server error during MFA verification.', error: error.message });
+    console.error('Error during MFA verification:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -336,7 +339,8 @@ export const setupMFA = async (req: AuthenticatedRequest, res: Response) => {
       message: 'MFA secret generated. Scan QR code and verify with code to enable.'
     });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error setting up MFA.', error: error.message });
+    console.error('Error setting up MFA:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -379,7 +383,8 @@ export const enableMFA = async (req: AuthenticatedRequest, res: Response) => {
 
     return res.status(200).json({ message: 'MFA successfully enabled.' });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error enabling MFA.', error: error.message });
+    console.error('Error enabling MFA:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -415,7 +420,8 @@ export const logout = async (req: AuthenticatedRequest, res: Response) => {
 
     return res.status(200).json({ message: 'Logged out successfully.' });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error during logout.', error: error.message });
+    console.error('Error during logout:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -549,7 +555,8 @@ export const changePassword = async (req: AuthenticatedRequest, res: Response) =
 
     return res.status(200).json({ message: 'Password changed successfully. Please log in with your new password.' });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error changing password.', error: error.message });
+    console.error('Error changing password:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -614,7 +621,8 @@ export const forceChangePassword = async (req: AuthenticatedRequest, res: Respon
 
     return res.status(200).json({ message: 'Password reset successfully. You can now log in.' });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error performing force password update.', error: error.message });
+    console.error('Error performing force password update:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -631,6 +639,7 @@ export const getMe = async (req: AuthenticatedRequest, res: Response) => {
       }
     });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error retrieving user details.', error: error.message });
+    console.error('Error retrieving user details:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };

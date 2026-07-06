@@ -120,7 +120,8 @@ export const createPayslip = async (req: AuthenticatedRequest, res: Response) =>
   } catch (error: any) {
     await session.abortTransaction();
     session.endSession();
-    return res.status(500).json({ message: 'Error processing payroll transaction.', error: error.message });
+    console.error('Error processing payroll transaction:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -152,7 +153,8 @@ export const getPayslips = async (req: AuthenticatedRequest, res: Response) => {
 
     return res.status(200).json({ payslips });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error retrieving payslips.', error: error.message });
+    console.error('Error retrieving payslips:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -188,7 +190,8 @@ export const getPayslipById = async (req: AuthenticatedRequest, res: Response) =
 
     return res.status(200).json({ payslip });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error retrieving payslip.', error: error.message });
+    console.error('Error retrieving payslip:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -257,7 +260,8 @@ export const downloadPayslipPDF = async (req: AuthenticatedRequest, res: Respons
 
     doc.end();
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error generating PDF.', error: error.message });
+    console.error('Error generating PDF:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -359,7 +363,8 @@ export const updatePayslip = async (req: AuthenticatedRequest, res: Response) =>
   } catch (error: any) {
     await session.abortTransaction();
     session.endSession();
-    return res.status(500).json({ message: 'Error updating payslip payroll transaction.', error: error.message });
+    console.error('Error updating payslip payroll transaction:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -395,6 +400,7 @@ export const deletePayslip = async (req: AuthenticatedRequest, res: Response) =>
 
     return res.status(200).json({ message: 'Payslip deleted successfully.' });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error deleting payslip.', error: error.message });
+    console.error('Error deleting payslip:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };

@@ -164,6 +164,7 @@ export const getAuditLogs = async (req: AuthenticatedRequest, res: Response) => 
       }
     });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error retrieving audit logs.', error: error.message });
+    console.error('Error retrieving audit logs:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };

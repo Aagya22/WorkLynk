@@ -89,7 +89,8 @@ export const createProfile = async (req: AuthenticatedRequest, res: Response) =>
       profile: sanitizeProfileResponse(profile, req.user!.role)
     });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error creating profile.', error: error.message });
+    console.error('Error creating profile:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -131,7 +132,8 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
       profile: sanitizeProfileResponse(profile, req.user!.role)
     });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error retrieving profile.', error: error.message });
+    console.error('Error retrieving profile:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -205,7 +207,8 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
       profile: sanitizeProfileResponse(profile, req.user!.role)
     });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error updating profile.', error: error.message });
+    console.error('Error updating profile:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -257,6 +260,7 @@ export const uploadProfilePhoto = async (req: AuthenticatedRequest, res: Respons
       profilePhotoPath: savedPath
     });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error uploading profile photo.', error: error.message });
+    console.error('Error uploading profile photo:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };

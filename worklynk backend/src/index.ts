@@ -84,8 +84,10 @@ app.use('/api/payslips', payslipRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/audit-logs', auditRoutes);
 
+import { protect } from './middlewares/authMiddleware';
+
 // Serve static profile photos securely
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', protect, express.static(path.join(__dirname, '../uploads')));
 
 // Health Check Endpoint
 app.get('/health', (req: Request, res: Response) => {

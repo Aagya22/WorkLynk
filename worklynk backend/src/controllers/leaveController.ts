@@ -90,7 +90,8 @@ export const requestLeave = async (req: AuthenticatedRequest, res: Response) => 
 
     return res.status(201).json({ message: 'Leave request submitted successfully.', leave });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error submitting leave request.', error: error.message });
+    console.error('Error submitting leave request:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -110,7 +111,8 @@ export const getMyLeaves = async (req: AuthenticatedRequest, res: Response) => {
 
     return res.status(200).json({ leaves });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error retrieving leave history.', error: error.message });
+    console.error('Error retrieving leave history:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -149,7 +151,8 @@ export const getAllLeaves = async (req: AuthenticatedRequest, res: Response) => 
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
     });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error retrieving leave requests.', error: error.message });
+    console.error('Error retrieving leave requests:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -228,7 +231,8 @@ export const decideLeave = async (req: AuthenticatedRequest, res: Response) => {
 
     return res.status(200).json({ message: `Leave request successfully ${status}.`, leave });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error updating leave request.', error: error.message });
+    console.error('Error updating leave request:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
 
@@ -276,6 +280,7 @@ export const cancelLeave = async (req: AuthenticatedRequest, res: Response) => {
 
     return res.status(200).json({ message: 'Leave request cancelled successfully.', leave });
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error cancelling leave request.', error: error.message });
+    console.error('Error cancelling leave request:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
