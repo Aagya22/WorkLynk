@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
 import { connectDB } from './config/db';
+import { apiLimiter } from './middlewares/rateLimit';
 
 dotenv.config();
 
@@ -13,12 +14,42 @@ connectDB();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Security Middleware
-app.use(helmet());
+// Hardened Security Middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameAncestors: ["'none'"]
+    }
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  frameguard: {
+    action: 'deny'
+  },
+  noSniff: true,
+  referrerPolicy: {
+    policy: 'strict-origin-when-cross-origin'
+  }
+}));
+
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5000',
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
 }));
+
+app.use(apiLimiter);
 app.use(express.json());
 
 // Custom cookie-parsing middleware to avoid external dependencies
