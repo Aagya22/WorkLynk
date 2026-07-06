@@ -21,6 +21,7 @@ export interface IUser extends Document {
   lastFailedLogin: Date | null;
   resetPasswordToken: string | null;
   resetPasswordExpires: Date | null;
+  department: string | null;
   createdAt: Date;
   updatedAt: Date;
   isLocked: boolean;
@@ -49,6 +50,11 @@ const UserSchema = new Schema<IUser>({
     type: String,
     enum: ['employee', 'hr_manager', 'admin'],
     default: 'employee'
+  },
+  department: {
+    type: String,
+    default: null,
+    trim: true
   },
   isActive: {
     type: Boolean,

@@ -43,11 +43,13 @@ app.use((req: any, res, next) => {
 import authRoutes from './routes/authRoutes';
 import profileRoutes from './routes/profileRoutes';
 import payslipRoutes from './routes/payslipRoutes';
+import leaveRoutes from './routes/leaveRoutes';
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/payslips', payslipRoutes);
+app.use('/api/leaves', leaveRoutes);
 
 // Serve static profile photos securely
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
