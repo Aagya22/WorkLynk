@@ -22,6 +22,8 @@ export interface IUser extends Document {
   resetPasswordToken: string | null;
   resetPasswordExpires: Date | null;
   department: string | null;
+  consentToken: string | null;
+  consentTokenExpires: Date | null;
   createdAt: Date;
   updatedAt: Date;
   isLocked: boolean;
@@ -111,6 +113,14 @@ const UserSchema = new Schema<IUser>({
     default: null
   },
   resetPasswordExpires: {
+    type: Date,
+    default: null
+  },
+  consentToken: {
+    type: String,
+    default: null
+  },
+  consentTokenExpires: {
     type: Date,
     default: null
   }

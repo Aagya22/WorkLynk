@@ -76,11 +76,35 @@ export const register = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 export const login = async (req: AuthenticatedRequest, res: Response) => {
-  const { email, password } = req.body;
+  const { email, password, captchaToken } = req.body;
   const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
   const userAgent = req.headers['user-agent'] || 'unknown';
 
   try {
+    // hCaptcha verification (bypassed in test/mock mode if no HCAPTCHA_SECRET is configured)
+    if (process.env.NODE_ENV !== 'test') {
+      const hcaptchaSecret = process.env.HCAPTCHA_SECRET;
+      if (hcaptchaSecret) {
+        if (!captchaToken) {
+          return res.status(400).json({ message: 'hCaptcha token is required.' });
+        }
+        try {
+          const verifyRes = await fetch('https://hcaptcha.com/siteverify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `secret=${hcaptchaSecret}&response=${captchaToken}`
+          });
+          const verifyData: any = await verifyRes.json();
+          if (!verifyData.success) {
+            return res.status(400).json({ message: 'hCaptcha verification failed. Please try again.' });
+          }
+        } catch (fetchError) {
+          console.error('hCaptcha siteverify request failed:', fetchError);
+          return res.status(500).json({ message: 'An internal server error occurred.' });
+        }
+      }
+    }
+
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required.' });
     }

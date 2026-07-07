@@ -76,6 +76,7 @@ import profileRoutes from './routes/profileRoutes';
 import payslipRoutes from './routes/payslipRoutes';
 import leaveRoutes from './routes/leaveRoutes';
 import auditRoutes from './routes/auditRoutes';
+import adminRoutes from './routes/adminRoutes';
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
@@ -83,6 +84,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/payslips', payslipRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/audit-logs', auditRoutes);
+app.use('/api/admin', adminRoutes);
 
 import { protect } from './middlewares/authMiddleware';
 

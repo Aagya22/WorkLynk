@@ -3,7 +3,9 @@ import {
   createProfile,
   getProfile,
   updateProfile,
-  uploadProfilePhoto
+  uploadProfilePhoto,
+  generateExportConsentToken,
+  exportEmployeeData
 } from '../controllers/profileController';
 import { protect, restrictTo } from '../middlewares/authMiddleware';
 import { upload, validateMagicBytes } from '../middlewares/uploadMiddleware';
@@ -20,5 +22,9 @@ router.post(
   validateMagicBytes,
   uploadProfilePhoto
 );
+
+// GDPR Compliance Data Export routes
+router.post('/:userId/export-token', protect, generateExportConsentToken);
+router.post('/:userId/export', protect, exportEmployeeData);
 
 export default router;
