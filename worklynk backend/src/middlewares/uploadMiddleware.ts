@@ -49,6 +49,7 @@ export const validateMagicBytes = async (
     (req as any).savedFilePath = `/uploads/profile-photos/${filename}`;
     next();
   } catch (error: any) {
-    return res.status(500).json({ message: 'Error processing uploaded file.', error: error.message });
+    console.error('Error saving uploaded file:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
