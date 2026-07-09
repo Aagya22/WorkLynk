@@ -1,9 +1,11 @@
 import rateLimit from 'express-rate-limit';
+import dotenv from 'dotenv';
+dotenv.config();
 
-// General API rate limiter: max 100 requests per 15 minutes
+// General API rate limiter: max 100 requests per 15 minutes 
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: process.env.NODE_ENV === 'development' ? 2000 : 100,
   message: {
     message: 'Too many requests from this IP, please try again after 15 minutes.'
   },
@@ -14,7 +16,7 @@ export const apiLimiter = rateLimit({
 // Sensitive Auth rate limiter: max 5 failed attempts per 15 minutes
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: process.env.NODE_ENV === 'development' ? 100 : 5,
   message: {
     message: 'Too many authentication attempts from this IP, please try again after 15 minutes.'
   },

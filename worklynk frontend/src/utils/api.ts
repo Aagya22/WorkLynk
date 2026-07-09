@@ -1,7 +1,15 @@
 import axios from 'axios';
 
+const getBaseURL = () => {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    return `http://${hostname}:5001`;
+  }
+  return 'http://localhost:5001';
+};
+
 const api = axios.create({
-  baseURL: (import.meta as any).env.VITE_API_URL || 'http://localhost:5001',
+  baseURL: (import.meta as any).env.VITE_API_URL || getBaseURL(),
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -19,7 +27,12 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      originalRequest.url !== '/api/auth/login' &&
+      originalRequest.url !== '/api/auth/me' &&
+      !originalRequest._retry
+    ) {
       originalRequest._retry = true;
       try {
         await api.post('/api/auth/refresh');

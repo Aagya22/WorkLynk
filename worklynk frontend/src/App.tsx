@@ -5,6 +5,7 @@ import { Login } from './pages/Login';
 import { MfaVerify } from './pages/MfaVerify';
 import { ForcePasswordChange } from './pages/ForcePasswordChange';
 import { Dashboard } from './pages/Dashboard';
+import { Profile } from './pages/Profile';
 import { Forbidden } from './pages/Forbidden';
 import { NotFound } from './pages/NotFound';
 
@@ -75,7 +76,7 @@ export const App: React.FC = () => {
           path="/profile"
           element={
             <ProtectedRoute>
-              <div className="p-8 text-slate-400">Profile page coming soon...</div>
+              <Profile />
             </ProtectedRoute>
           }
         />

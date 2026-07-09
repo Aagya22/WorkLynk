@@ -43,8 +43,13 @@ app.use(helmet({
   }
 }));
 
+const allowedOrigins = ['http://localhost:5000', 'http://127.0.0.1:5000'];
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5000',
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
 }));
