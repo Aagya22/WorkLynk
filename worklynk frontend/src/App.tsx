@@ -9,6 +9,9 @@ import { Profile } from './pages/Profile';
 import { Payslips } from './pages/Payslips';
 import { Leaves } from './pages/Leaves';
 import { GDPR } from './pages/GDPR';
+import { HrDashboard } from './pages/HrDashboard';
+import { HrEmployeeList } from './pages/HrEmployeeList';
+import { HrLeaveApprovals } from './pages/HrLeaveApprovals';
 import { Forbidden } from './pages/Forbidden';
 import { NotFound } from './pages/NotFound';
 
@@ -26,6 +29,32 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// Role-based route protection
+const RoleRoute: React.FC<{ children: React.ReactNode; allowedRoles: string[] }> = ({
+  children,
+  allowedRoles
+}) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400 font-semibold">
+        Loading session status...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!allowedRoles.includes(user.role)) {
+    return <Navigate to="/forbidden" replace />;
   }
 
   return <>{children}</>;
@@ -105,6 +134,32 @@ export const App: React.FC = () => {
             <ProtectedRoute>
               <GDPR />
             </ProtectedRoute>
+          }
+        />
+
+        {/* Protected HR/Manager Routes */}
+        <Route
+          path="/hr/dashboard"
+          element={
+            <RoleRoute allowedRoles={['hr_manager', 'admin']}>
+              <HrDashboard />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/hr/employees"
+          element={
+            <RoleRoute allowedRoles={['hr_manager', 'admin']}>
+              <HrEmployeeList />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/hr/leaves"
+          element={
+            <RoleRoute allowedRoles={['hr_manager', 'admin']}>
+              <HrLeaveApprovals />
+            </RoleRoute>
           }
         />
 

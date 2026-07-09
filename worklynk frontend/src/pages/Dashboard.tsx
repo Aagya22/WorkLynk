@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import { DashboardLayout } from '../layouts/DashboardLayout';
@@ -7,6 +7,17 @@ import { StatCard } from '../components/StatCard';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else if (user.role === 'hr_manager') {
+        navigate('/hr/dashboard', { replace: true });
+      }
+    }
+  }, [user, navigate]);
   
   const [stats, setStats] = useState({
     totalLeaves: 0,

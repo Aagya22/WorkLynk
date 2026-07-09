@@ -13,7 +13,6 @@ const seedDB = async () => {
     console.error('DATABASE_URL is not defined in environment variables.');
     process.exit(1);
   }
-
   try {
     console.log('Connecting to database...');
     await mongoose.connect(dbUri);
