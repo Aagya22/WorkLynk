@@ -17,3 +17,6 @@ declare module 'speakeasy' {
     }): boolean;
   }
 }
+
+declare module 'archiver-zip-encrypted';
+

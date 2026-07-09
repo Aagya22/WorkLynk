@@ -11,8 +11,8 @@ import { Payslip } from '../models/payslip.model';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
 import { sendSecurityAlertEmail } from '../utils/email';
 
-const archiver = require('archiver');
-const archiverZipEncrypted = require('archiver-zip-encrypted');
+import archiver from 'archiver';
+import archiverZipEncrypted from 'archiver-zip-encrypted';
 
 const sanitizeInput = (text: string): string => {
   if (!text) return '';
@@ -274,7 +274,7 @@ export const uploadProfilePhoto = async (req: AuthenticatedRequest, res: Respons
 };
 
 // Register password-protected zip format
-archiver.registerFormat('zip-encrypted', archiverZipEncrypted as any);
+(archiver as any).registerFormat('zip-encrypted', archiverZipEncrypted);
 
 const generatePayslipPDFBuffer = (payslip: any, employeeName: string, employeeEmail: string): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
@@ -318,11 +318,11 @@ const createEncryptedZipBuffer = (
   password: string
 ): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
-    const archive = archiver.create('zip-encrypted', {
+    const archive = (archiver as any).create('zip-encrypted', {
       zlib: { level: 9 },
       encryptionMethod: 'aes256',
       password
-    } as any);
+    });
     
     const chunks: Buffer[] = [];
     archive.on('data', (chunk: any) => chunks.push(chunk));

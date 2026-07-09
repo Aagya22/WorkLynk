@@ -1,3 +1,4 @@
+/// <reference path="../types/speakeasy.d.ts" />
 import { Response } from 'express';
 import bcrypt from 'bcrypt';
 import speakeasy from 'speakeasy';
