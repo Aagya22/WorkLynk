@@ -8,6 +8,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Profile } from './pages/Profile';
 import { Payslips } from './pages/Payslips';
 import { Leaves } from './pages/Leaves';
+import { GDPR } from './pages/GDPR';
 import { Forbidden } from './pages/Forbidden';
 import { NotFound } from './pages/NotFound';
 
@@ -102,7 +103,7 @@ export const App: React.FC = () => {
           path="/gdpr"
           element={
             <ProtectedRoute>
-              <div className="p-8 text-slate-400">GDPR data export coming soon...</div>
+              <GDPR />
             </ProtectedRoute>
           }
         />
