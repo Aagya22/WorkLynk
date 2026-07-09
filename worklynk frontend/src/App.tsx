@@ -6,6 +6,7 @@ import { MfaVerify } from './pages/MfaVerify';
 import { ForcePasswordChange } from './pages/ForcePasswordChange';
 import { Dashboard } from './pages/Dashboard';
 import { Profile } from './pages/Profile';
+import { Payslips } from './pages/Payslips';
 import { Forbidden } from './pages/Forbidden';
 import { NotFound } from './pages/NotFound';
 
@@ -84,7 +85,7 @@ export const App: React.FC = () => {
           path="/payslips"
           element={
             <ProtectedRoute>
-              <div className="p-8 text-slate-400">Payslips page coming soon...</div>
+              <Payslips />
             </ProtectedRoute>
           }
         />
