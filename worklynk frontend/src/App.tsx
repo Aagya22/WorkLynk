@@ -7,6 +7,7 @@ import { ForcePasswordChange } from './pages/ForcePasswordChange';
 import { Dashboard } from './pages/Dashboard';
 import { Profile } from './pages/Profile';
 import { Payslips } from './pages/Payslips';
+import { Leaves } from './pages/Leaves';
 import { Forbidden } from './pages/Forbidden';
 import { NotFound } from './pages/NotFound';
 
@@ -93,7 +94,7 @@ export const App: React.FC = () => {
           path="/leaves"
           element={
             <ProtectedRoute>
-              <div className="p-8 text-slate-400">Leave requests page coming soon...</div>
+              <Leaves />
             </ProtectedRoute>
           }
         />
