@@ -18,7 +18,7 @@ interface ProfileData {
 }
 
 export const Profile: React.FC = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +36,15 @@ export const Profile: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState('');
+
+  // MFA states
+  const [mfaSecret, setMfaSecret] = useState('');
+  const [qrCode, setQrCode] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaSetupLoading, setMfaSetupLoading] = useState(false);
+  const [mfaError, setMfaError] = useState('');
+  const [mfaSuccess, setMfaSuccess] = useState('');
+  const [isSettingUpMfa, setIsSettingUpMfa] = useState(false);
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -98,7 +107,7 @@ export const Profile: React.FC = () => {
     }
 
     if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
-      setUploadError('Invalid format. Only JPEG and PNG are allowed.');
+      setUploadError('Invalid format. Select a JPG, JPEG, or PNG image.');
       return;
     }
 
@@ -109,28 +118,75 @@ export const Profile: React.FC = () => {
     e.preventDefault();
     if (!user || !selectedFile) return;
 
-    setUploading(true);
     setUploadError('');
     setUploadSuccess('');
+    setUploading(true);
 
     const formData = new FormData();
     formData.append('photo', selectedFile);
 
     try {
-      await api.post(`/api/profile/${user.id}/photo`, formData, {
+      const response = await api.post(`/api/profile/${user.id}/photo`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
 
-      setUploadSuccess('Profile photo uploaded successfully.');
+      setUploadSuccess('Profile photo uploaded.');
       setSelectedFile(null);
-      // Reload profile to show new image path
-      fetchProfile();
+      
+      if (profile) {
+        setProfile({
+          ...profile,
+          profilePhotoPath: response.data.profilePhotoPath
+        });
+      }
     } catch (err: any) {
       setUploadError(err.response?.data?.message || 'Failed to upload profile photo.');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleInitiateMfa = async () => {
+    setMfaError('');
+    setMfaSuccess('');
+    setMfaSetupLoading(true);
+    try {
+      const response = await api.post('/api/auth/mfa/setup');
+      if (response.data?.qrCodeDataUrl) {
+        setQrCode(response.data.qrCodeDataUrl);
+        setMfaSecret(response.data.secret);
+        setIsSettingUpMfa(true);
+      }
+    } catch (err: any) {
+      setMfaError(err.response?.data?.message || 'Failed to initiate MFA setup.');
+    } finally {
+      setMfaSetupLoading(false);
+    }
+  };
+
+  const handleVerifyMfa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMfaError('');
+    setMfaSuccess('');
+    setMfaSetupLoading(true);
+    try {
+      await api.post('/api/auth/mfa/enable', { code: mfaCode });
+      setMfaSuccess('MFA successfully enabled.');
+      if (user && updateUser) {
+        updateUser({ ...user, mfaEnabled: true });
+      }
+      setTimeout(() => {
+        setIsSettingUpMfa(false);
+        setQrCode('');
+        setMfaSecret('');
+        setMfaCode('');
+      }, 1500);
+    } catch (err: any) {
+      setMfaError(err.response?.data?.message || 'Verification failed.');
+    } finally {
+      setMfaSetupLoading(false);
     }
   };
 
@@ -162,8 +218,9 @@ export const Profile: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column: Photo Upload and Summary */}
+            {/* Left Column: Photo Upload and MFA */}
             <div className="space-y-6">
+              {/* Photo Upload Card */}
               <div className="glassmorphism rounded-2xl p-6 border border-white/5 flex flex-col items-center text-center space-y-4">
                 <div className="relative group">
                   <div className="w-32 h-32 rounded-full border border-slate-800 bg-slate-900 overflow-hidden flex items-center justify-center relative shadow-2xl">
@@ -233,13 +290,113 @@ export const Profile: React.FC = () => {
                   )}
                 </form>
               </div>
+
+              {/* MFA Card */}
+              <div className="glassmorphism rounded-2xl p-6 border border-white/5 space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-primary-500/10 border border-primary-500/20 rounded-lg text-primary-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wider">Multi-Factor Auth (MFA)</h4>
+                </div>
+
+                {user?.mfaEnabled ? (
+                  <div className="space-y-3">
+                    <div className="p-3.5 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center space-x-3 text-green-400 text-xs font-bold">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>MFA is currently active on your account</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                      Your identity is secured. Next logins will request a 6-digit verification code from your TOTP authenticator device.
+                    </p>
+                  </div>
+                ) : isSettingUpMfa ? (
+                  <form onSubmit={handleVerifyMfa} className="space-y-4">
+                    {mfaError && (
+                      <div className="p-2.5 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl">
+                        {mfaError}
+                      </div>
+                    )}
+                    {mfaSuccess && (
+                      <div className="p-2.5 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold rounded-xl">
+                        {mfaSuccess}
+                      </div>
+                    )}
+
+                    <div className="flex flex-col items-center justify-center p-3 bg-white rounded-xl">
+                      <img src={qrCode} alt="TOTP QR Code" className="w-40 h-40" />
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Secret Key</span>
+                      <code className="text-xs font-mono font-bold text-slate-300 block bg-slate-950 p-2 rounded-lg text-center break-all select-all">
+                        {mfaSecret}
+                      </code>
+                    </div>
+
+                    <Input
+                      id="mfa-code"
+                      label="Verification Code"
+                      type="text"
+                      placeholder="e.g. 123456"
+                      value={mfaCode}
+                      onChange={(e) => setMfaCode(e.target.value)}
+                      required
+                      disabled={mfaSetupLoading}
+                    />
+
+                    <div className="flex space-x-2 pt-2">
+                      <Button
+                        variant="secondary"
+                        type="button"
+                        fullWidth
+                        onClick={() => setIsSettingUpMfa(false)}
+                        disabled={mfaSetupLoading}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="primary"
+                        type="submit"
+                        fullWidth
+                        loading={mfaSetupLoading}
+                      >
+                        Verify & Enable
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-xs text-slate-400 leading-relaxed font-sans">
+                      Add a secondary layer of protection to secure your personal data records against unauthorized login attempts.
+                    </p>
+                    {mfaError && (
+                      <div className="p-2.5 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl">
+                        {mfaError}
+                      </div>
+                    )}
+                    <Button
+                      variant="primary"
+                      fullWidth
+                      onClick={handleInitiateMfa}
+                      loading={mfaSetupLoading}
+                    >
+                      Setup MFA Controls
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Right Column: Edit Profile Form */}
             <div className="lg:col-span-2 space-y-6">
               <div className="glassmorphism rounded-2xl p-6 border border-white/5">
-                <form onSubmit={handleUpdateProfile} className="space-y-5">
-                  <h3 className="text-base font-bold text-slate-200 uppercase tracking-wider border-b border-slate-900 pb-3.5">
+                <form onSubmit={handleUpdateProfile} className="space-y-6">
+                  <h3 className="text-lg font-bold text-slate-200 border-b border-slate-900 pb-3 uppercase tracking-wider">
                     Contact & Personal Information
                   </h3>
 
