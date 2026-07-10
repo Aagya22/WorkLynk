@@ -12,6 +12,8 @@ import { GDPR } from './pages/GDPR';
 import { HrDashboard } from './pages/HrDashboard';
 import { HrEmployeeList } from './pages/HrEmployeeList';
 import { HrLeaveApprovals } from './pages/HrLeaveApprovals';
+import { AdminDashboard } from './pages/AdminDashboard';
+import { AdminUserManagement } from './pages/AdminUserManagement';
 import { Forbidden } from './pages/Forbidden';
 import { NotFound } from './pages/NotFound';
 
@@ -159,6 +161,24 @@ export const App: React.FC = () => {
           element={
             <RoleRoute allowedRoles={['hr_manager', 'admin']}>
               <HrLeaveApprovals />
+            </RoleRoute>
+          }
+        />
+
+        {/* Protected Admin Routes */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <RoleRoute allowedRoles={['admin']}>
+              <AdminDashboard />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <RoleRoute allowedRoles={['admin']}>
+              <AdminUserManagement />
             </RoleRoute>
           }
         />
