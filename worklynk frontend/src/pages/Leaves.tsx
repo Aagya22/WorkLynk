@@ -37,7 +37,7 @@ export const Leaves: React.FC = () => {
 
   const fetchLeaves = async () => {
     try {
-      const response = await api.get('/api/leaves/my');
+      const response = await api.get('/api/leaves/me');
       if (response.data?.leaves) {
         setLeaves(response.data.leaves);
       }
@@ -82,7 +82,7 @@ export const Leaves: React.FC = () => {
       await api.post('/api/leaves', {
         startDate,
         endDate,
-        type,
+        leaveType: type,
         reason
       });
 

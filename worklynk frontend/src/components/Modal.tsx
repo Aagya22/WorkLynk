@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { Button } from './Button';
 
 interface ModalProps {
   isOpen: boolean;
@@ -72,15 +71,11 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end items-center px-6 py-4 border-t border-slate-800/80 bg-slate-950/30 space-x-3">
-          {footer ? (
-            footer
-          ) : (
-            <Button variant="secondary" onClick={onClose}>
-              Close
-            </Button>
-          )}
-        </div>
+        {footer && (
+          <div className="flex justify-end items-center px-6 py-4 border-t border-slate-800/80 bg-slate-950/30 space-x-3">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

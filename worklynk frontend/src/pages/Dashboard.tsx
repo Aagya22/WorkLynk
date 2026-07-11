@@ -33,7 +33,7 @@ export const Dashboard: React.FC = () => {
     const fetchDashboardData = async () => {
       try {
         const [leavesRes, payslipsRes] = await Promise.all([
-          api.get('/api/leaves/my?limit=5'),
+          api.get('/api/leaves/me?limit=5'),
           api.get('/api/payslips?limit=1')
         ]);
         
