@@ -33,6 +33,7 @@ export const Profile: React.FC = () => {
 
   // Photo upload states
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState('');
@@ -112,6 +113,25 @@ export const Profile: React.FC = () => {
     }
 
     setSelectedFile(file);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+  };
+
+  const handleCancelSelection = () => {
+    setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+    setUploadError('');
+    setUploadSuccess('');
+    const fileInput = document.getElementById('photo-file') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
   };
 
   const handlePhotoUpload = async (e: React.FormEvent) => {
@@ -134,6 +154,14 @@ export const Profile: React.FC = () => {
 
       setUploadSuccess('Profile photo uploaded.');
       setSelectedFile(null);
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }
+      const fileInput = document.getElementById('photo-file') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
       
       if (profile) {
         setProfile({
@@ -224,11 +252,18 @@ export const Profile: React.FC = () => {
               <div className="glassmorphism rounded-2xl p-6 border border-white/5 flex flex-col items-center text-center space-y-4">
                 <div className="relative group">
                   <div className="w-32 h-32 rounded-full border border-slate-800 bg-slate-900 overflow-hidden flex items-center justify-center relative shadow-2xl">
-                    {profile.profilePhotoPath ? (
+                    {previewUrl ? (
+                      <img
+                        src={previewUrl}
+                        alt="Profile Photo Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : profile.profilePhotoPath ? (
                       <img
                         src={`${apiBaseURL}${profile.profilePhotoPath}`}
                         alt="Profile Photo"
                         className="w-full h-full object-cover"
+                        crossOrigin="use-credentials"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = ''; // Clear source to fallback
                         }}
@@ -284,9 +319,20 @@ export const Profile: React.FC = () => {
                   )}
 
                   {selectedFile && (
-                    <Button type="submit" variant="primary" fullWidth loading={uploading}>
-                      Apply Photo
-                    </Button>
+                    <div className="flex space-x-3 pt-2">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        fullWidth
+                        onClick={handleCancelSelection}
+                        disabled={uploading}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" variant="primary" fullWidth loading={uploading}>
+                        Apply Photo
+                      </Button>
+                    </div>
                   )}
                 </form>
               </div>

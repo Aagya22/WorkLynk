@@ -37,3 +37,6 @@ Thumbs.db
 # Docker volumes
 pgdata/
 redisdata/
+
+# Application uploads
+worklynk backend/uploads/
