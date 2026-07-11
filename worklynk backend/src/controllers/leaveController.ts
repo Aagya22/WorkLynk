@@ -129,13 +129,20 @@ export const getAllLeaves = async (req: AuthenticatedRequest, res: Response) => 
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    const leaves = await Leave.find()
+    const filter: any = {};
+    if (req.query.status === 'pending') {
+      filter.status = 'pending';
+    } else if (req.query.status === 'decided') {
+      filter.status = { $in: ['approved', 'rejected'] };
+    }
+
+    const leaves = await Leave.find(filter)
       .populate('employeeId', 'email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await Leave.countDocuments();
+    const total = await Leave.countDocuments(filter);
 
     await AuditLog.create({
       userId: req.user!._id,

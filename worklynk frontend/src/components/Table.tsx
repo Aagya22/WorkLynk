@@ -27,21 +27,21 @@ export function Table<T>({
 }: TableProps<T>) {
   return (
     <div className="flex flex-col w-full">
-      <div className="overflow-x-auto rounded-xl border border-slate-800/80 bg-slate-950/20 backdrop-blur-md">
-        <table className="min-w-full divide-y divide-slate-800/60 text-left text-sm">
-          <thead className="bg-slate-900/60">
+      <div className="overflow-x-auto scrollbar-none rounded-2xl border border-[#1B2234] bg-[#070B18]">
+        <table className="min-w-full text-left text-sm relative border-collapse">
+          <thead className="sticky top-0 z-10 border-b border-[#1B2234] bg-[#0D1326] backdrop-blur-md">
             <tr>
               {columns.map((col, idx) => (
                 <th
                   key={idx}
-                  className={`px-6 py-4.5 text-xs font-bold uppercase tracking-wider text-slate-400 ${col.className || ''}`}
+                  className={`px-6 py-4 text-xs font-semibold uppercase tracking-[0.10em] text-[#94A3B8] ${col.className || ''}`}
                 >
                   {col.header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/40 bg-transparent">
+          <tbody className="divide-y divide-[#1B2234] bg-transparent">
             {loading ? (
               <tr>
                 <td colSpan={columns.length} className="px-6 py-12 text-center text-slate-400">
@@ -62,11 +62,11 @@ export function Table<T>({
               </tr>
             ) : (
               data.map((item, rowIdx) => (
-                <tr key={rowIdx} className="hover:bg-white/2 transition-colors duration-150">
+                <tr key={rowIdx} className="odd:bg-[#0B1226]/40 even:bg-transparent hover:bg-[#0B1226]/80 transition-colors duration-150">
                   {columns.map((col, colIdx) => (
                     <td
                       key={colIdx}
-                      className={`px-6 py-4.5 text-slate-300 font-medium whitespace-nowrap align-middle ${col.className || ''}`}
+                      className={`px-6 py-3.5 text-[#F8FAFC]/90 font-medium text-[13.5px] whitespace-nowrap align-middle ${col.className || ''}`}
                     >
                       {col.accessor(item)}
                     </td>

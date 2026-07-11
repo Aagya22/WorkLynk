@@ -4,7 +4,7 @@ import api from '../utils/api';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { StatCard } from '../components/StatCard';
 import { Table } from '../components/Table';
-import { Button } from '../components/Button';
+import { Users, CalendarDays } from 'lucide-react';
 
 interface LeaveRequest {
   _id: string;
@@ -95,8 +95,9 @@ export const HrDashboard: React.FC = () => {
     <DashboardLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">HR Operations Center</h1>
-          <p className="text-sm text-slate-400 font-medium font-sans">
+          <div className="text-xs font-semibold text-[#4F8CFF] uppercase tracking-[0.15em] mb-1">HR Management</div>
+          <h1 className="text-[36px] font-extrabold tracking-tight text-[#F8FAFC]">HR Operations Center</h1>
+          <p className="text-[14px] text-[#94A3B8] font-medium font-sans mt-0.5">
             Monitor organizational metrics, approve pending leave applications, and manage employee records.
           </p>
         </div>
@@ -134,7 +135,7 @@ export const HrDashboard: React.FC = () => {
               <StatCard
                 title="Pending Leaves"
                 value={stats.pendingLeaves}
-                description="Applications requiring action"
+                description={stats.pendingLeaves === 0 ? "Approval queue cleared" : "Leaves requiring review"}
                 variant="amber"
                 icon={
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -146,7 +147,7 @@ export const HrDashboard: React.FC = () => {
               <StatCard
                 title="Locked Accounts"
                 value={stats.lockedUsers}
-                description="Failed login lockouts"
+                description={stats.lockedUsers === 0 ? "No active locks" : "Accounts currently locked"}
                 variant="rose"
                 icon={
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -158,7 +159,7 @@ export const HrDashboard: React.FC = () => {
               <StatCard
                 title="Failed Logins (24h)"
                 value={stats.failedLogins24h}
-                description="System security warning log"
+                description={stats.failedLogins24h === 0 ? "Zero failure warnings" : "Attempts in 24h"}
                 variant="rose"
                 icon={
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -173,36 +174,54 @@ export const HrDashboard: React.FC = () => {
               {/* Recent Leaves list */}
               <div className="lg:col-span-2 space-y-4">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-bold text-slate-200">Recent Leave Applications</h3>
-                  <Link to="/hr/leaves">
-                    <Button variant="secondary">View All approvals</Button>
+                  <h2 className="text-[26px] font-semibold text-[#F8FAFC]">Recent Leave Applications</h2>
+                  <Link
+                    to="/hr/leaves"
+                    className="px-2.5 py-1 bg-slate-900 border border-slate-800/80 text-[#94A3B8] hover:text-[#F8FAFC] text-[10px] font-bold rounded-lg transition-all focus:outline-none"
+                  >
+                    View All Approvals
                   </Link>
                 </div>
                 
                 {recentLeaves.length === 0 ? (
-                  <div className="glassmorphism rounded-2xl p-8 border border-white/5 text-center text-slate-500 text-xs">
+                  <div className="bg-[#0D1326] border border-white/[0.08] rounded-2xl p-8 text-center text-[#94A3B8] text-xs">
                     No active or historical leave records found.
                   </div>
                 ) : (
-                  <div className="glassmorphism rounded-2xl border border-white/5 overflow-hidden">
+                  <div className="bg-[#0D1326] border border-white/[0.08] rounded-2xl overflow-hidden">
                     <Table data={recentLeaves} columns={leaveColumns} />
                   </div>
                 )}
               </div>
 
               {/* Operations Quick Actions */}
-              <div className="glassmorphism rounded-2xl p-6 border border-white/5 space-y-4 h-fit">
-                <h3 className="text-lg font-bold text-slate-200 border-b border-slate-900 pb-3">Operations Directory</h3>
+              <div className="bg-[#0D1326] border border-white/[0.08] rounded-2xl p-6 space-y-4 h-fit">
+                <h3 className="text-lg font-bold text-slate-200 border-b border-white/[0.08] pb-3">Operations Directory</h3>
                 <div className="space-y-3">
-                  <Link to="/hr/employees" className="block">
-                    <Button variant="primary" fullWidth>
-                      Employee Directory
-                    </Button>
+                  <Link
+                    to="/hr/employees"
+                    className="p-3 bg-[#070B18]/50 hover:bg-[#4F8CFF]/10 border border-white/[0.05] hover:border-[#4F8CFF]/30 text-slate-300 hover:text-slate-100 rounded-xl flex items-center space-x-3 transition-all group"
+                  >
+                    <div className="text-[#94A3B8] group-hover:text-[#4F8CFF] transition-colors">
+                      <Users size={16} />
+                    </div>
+                    <div className="flex flex-col text-left">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8] group-hover:text-[#F8FAFC]">Employee Directory</span>
+                      <span className="text-[9px] text-slate-500 mt-0.5">Manage profiles & records</span>
+                    </div>
                   </Link>
-                  <Link to="/hr/leaves" className="block">
-                    <Button variant="secondary" fullWidth>
-                      Leave Approvals Center
-                    </Button>
+
+                  <Link
+                    to="/hr/leaves"
+                    className="p-3 bg-[#070B18]/50 hover:bg-[#F59E0B]/10 border border-white/[0.05] hover:border-[#F59E0B]/30 text-slate-300 hover:text-slate-100 rounded-xl flex items-center space-x-3 transition-all group"
+                  >
+                    <div className="text-[#94A3B8] group-hover:text-[#F59E0B] transition-colors">
+                      <CalendarDays size={16} />
+                    </div>
+                    <div className="flex flex-col text-left">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#94A3B8] group-hover:text-[#F8FAFC]">Approvals Center</span>
+                      <span className="text-[9px] text-slate-500 mt-0.5">Review leave requests</span>
+                    </div>
                   </Link>
                 </div>
               </div>

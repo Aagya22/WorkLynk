@@ -32,15 +32,17 @@ export const HrLeaveApprovals: React.FC = () => {
   const [processing, setProcessing] = useState(false);
   const [modalError, setModalError] = useState('');
 
-  // Pagination states
+  // Pagination and filtering states
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'decided'>('all');
   const limit = 10;
 
   const fetchAllLeaves = async (targetPage: number = 1) => {
     try {
-      const response = await api.get(`/api/leaves?limit=${limit}&page=${targetPage}`);
+      const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
+      const response = await api.get(`/api/leaves?limit=${limit}&page=${targetPage}${statusParam}`);
       if (response.data) {
         setLeaves(response.data.leaves || []);
         if (response.data.pagination) {
@@ -58,7 +60,7 @@ export const HrLeaveApprovals: React.FC = () => {
 
   useEffect(() => {
     fetchAllLeaves(1);
-  }, []);
+  }, [statusFilter]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -87,7 +89,7 @@ export const HrLeaveApprovals: React.FC = () => {
       setSelectedLeave(null);
       setDecision(null);
       setComment('');
-      fetchAllLeaves();
+      fetchAllLeaves(page);
     } catch (err: any) {
       setModalError(err.response?.data?.message || 'Failed to submit leave request decision.');
     } finally {
@@ -181,11 +183,47 @@ export const HrLeaveApprovals: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">Leave Approvals Center</h1>
-          <p className="text-sm text-slate-400 font-medium">
-            Review submitted leave requests, write assessment comments, and grant or deny time-off requests.
-          </p>
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">Leave Approvals Center</h1>
+            <p className="text-sm text-slate-400 font-medium max-w-2xl mt-1">
+              Review submitted leave requests, write assessment comments, and grant or deny time-off requests.
+            </p>
+          </div>
+          
+          {/* Quick Filters */}
+          <div className="flex items-center space-x-2 bg-slate-950/40 p-1 border border-slate-900 rounded-xl">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider transition-all duration-300 ${
+                statusFilter === 'all'
+                  ? 'bg-primary-500/10 text-primary-400 border border-primary-500/20'
+                  : 'text-slate-500 hover:text-slate-300 border border-transparent'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setStatusFilter('pending')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider transition-all duration-300 ${
+                statusFilter === 'pending'
+                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                  : 'text-slate-500 hover:text-slate-300 border border-transparent'
+              }`}
+            >
+              Pending
+            </button>
+            <button
+              onClick={() => setStatusFilter('decided')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider transition-all duration-300 ${
+                statusFilter === 'decided'
+                  ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                  : 'text-slate-500 hover:text-slate-300 border border-transparent'
+              }`}
+            >
+              Decided
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -203,8 +241,18 @@ export const HrLeaveApprovals: React.FC = () => {
             {error}
           </div>
         ) : leaves.length === 0 ? (
-          <div className="glassmorphism rounded-2xl p-12 border border-white/5 text-center text-slate-500 text-xs">
-            No active or historical leave records found in database.
+          <div className="glassmorphism rounded-2xl p-16 border border-white/5 text-center flex flex-col items-center justify-center space-y-4">
+            <div className="p-3 bg-slate-900 border border-slate-800 rounded-2xl text-slate-500">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+            </div>
+            <div className="space-y-1">
+              <p className="text-slate-300 font-bold text-base">All Caught Up!</p>
+              <p className="text-xs text-slate-500 max-w-sm">
+                No leave requests found matching the "{statusFilter}" filter selection.
+              </p>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">

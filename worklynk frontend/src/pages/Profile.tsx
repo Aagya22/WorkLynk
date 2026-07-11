@@ -30,6 +30,7 @@ export const Profile: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [emergencyContact, setEmergencyContact] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
 
   // Photo upload states
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -85,6 +86,7 @@ export const Profile: React.FC = () => {
       });
       
       setSuccess('Profile updated successfully.');
+      setIsEditing(false);
       if (response.data?.profile) {
         setProfile(response.data.profile);
       }
@@ -93,6 +95,17 @@ export const Profile: React.FC = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCancelEdit = () => {
+    if (profile) {
+      setFullName(profile.fullName || '');
+      setPhoneNumber(profile.phoneNumber || '');
+      setEmergencyContact(profile.emergencyContact || '');
+    }
+    setIsEditing(false);
+    setError('');
+    setSuccess('');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -466,7 +479,7 @@ export const Profile: React.FC = () => {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
-                      disabled={saving}
+                      disabled={!isEditing || saving}
                     />
 
                     <div className="flex flex-col space-y-1.5">
@@ -512,7 +525,7 @@ export const Profile: React.FC = () => {
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       required
-                      disabled={saving}
+                      disabled={!isEditing || saving}
                     />
 
                     <Input
@@ -523,7 +536,7 @@ export const Profile: React.FC = () => {
                       value={emergencyContact}
                       onChange={(e) => setEmergencyContact(e.target.value)}
                       required
-                      disabled={saving}
+                      disabled={!isEditing || saving}
                     />
                   </div>
 
@@ -562,9 +575,29 @@ export const Profile: React.FC = () => {
                   )}
 
                   <div className="flex justify-end pt-4 border-t border-slate-900">
-                    <Button type="submit" variant="primary" loading={saving}>
-                      Save Changes
-                    </Button>
+                    {isEditing ? (
+                      <div className="flex space-x-3">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={handleCancelEdit}
+                          disabled={saving}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit" variant="primary" loading={saving}>
+                          Save Changes
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="primary"
+                        onClick={() => setIsEditing(true)}
+                      >
+                        Edit Profile Details
+                      </Button>
+                    )}
                   </div>
                 </form>
               </div>
