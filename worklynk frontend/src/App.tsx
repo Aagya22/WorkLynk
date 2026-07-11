@@ -14,6 +14,7 @@ import { HrEmployeeList } from './pages/HrEmployeeList';
 import { HrLeaveApprovals } from './pages/HrLeaveApprovals';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminUserManagement } from './pages/AdminUserManagement';
+import { AuditLogs } from './pages/AuditLogs';
 import { Forbidden } from './pages/Forbidden';
 import { NotFound } from './pages/NotFound';
 
@@ -164,6 +165,14 @@ export const App: React.FC = () => {
             </RoleRoute>
           }
         />
+        <Route
+          path="/hr/logs"
+          element={
+            <RoleRoute allowedRoles={['hr_manager', 'admin']}>
+              <AuditLogs />
+            </RoleRoute>
+          }
+        />
 
         {/* Protected Admin Routes */}
         <Route
@@ -179,6 +188,14 @@ export const App: React.FC = () => {
           element={
             <RoleRoute allowedRoles={['admin']}>
               <AdminUserManagement />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="/admin/logs"
+          element={
+            <RoleRoute allowedRoles={['admin']}>
+              <AuditLogs />
             </RoleRoute>
           }
         />
