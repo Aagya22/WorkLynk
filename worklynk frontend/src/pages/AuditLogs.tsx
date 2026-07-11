@@ -27,13 +27,26 @@ export const AuditLogs: React.FC = () => {
   const [logFilter, setLogFilter] = useState('');
   const [selectedLog, setSelectedLog] = useState<AuditLogRecord | null>(null);
 
-  const fetchAuditLogs = async () => {
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const limit = 15; // 15 records per page
+
+  const fetchAuditLogs = async (targetPage: number) => {
     try {
       setLoading(true);
-      const url = logFilter ? `/api/audit-logs?limit=50&actionType=${logFilter}` : '/api/audit-logs?limit=50';
+      const url = logFilter
+        ? `/api/audit-logs?limit=${limit}&page=${targetPage}&actionType=${logFilter}`
+        : `/api/audit-logs?limit=${limit}&page=${targetPage}`;
       const response = await api.get(url);
-      if (response.data?.logs) {
-        setLogs(response.data.logs);
+      if (response.data) {
+        setLogs(response.data.logs || []);
+        if (response.data.pagination) {
+          setPage(response.data.pagination.page);
+          setTotalPages(response.data.pagination.totalPages || 1);
+          setTotalRecords(response.data.pagination.total || 0);
+        }
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch audit logs.');
@@ -43,8 +56,14 @@ export const AuditLogs: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchAuditLogs();
+    fetchAuditLogs(1);
   }, [logFilter]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      fetchAuditLogs(newPage);
+    }
+  };
 
   const auditColumns = [
     {
@@ -95,7 +114,7 @@ export const AuditLogs: React.FC = () => {
               Review history of critical activities, logs access, and unauthorized attempts.
             </p>
           </div>
-          
+
           <select
             value={logFilter}
             onChange={(e) => setLogFilter(e.target.value)}
@@ -130,8 +149,38 @@ export const AuditLogs: React.FC = () => {
             No matching audit records found.
           </div>
         ) : (
-          <div className="glassmorphism rounded-2xl border border-white/5 overflow-hidden">
-            <Table data={logs} columns={auditColumns} />
+          <div className="space-y-4">
+            <div className="glassmorphism rounded-2xl border border-white/5 overflow-hidden">
+              <Table data={logs} columns={auditColumns} />
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-950/20 p-4 border border-white/5 rounded-2xl">
+              <div className="text-xs text-slate-400 font-medium font-sans">
+                Showing logs <span className="text-slate-200 font-bold">{Math.min(totalRecords, (page - 1) * limit + 1)}</span> to{' '}
+                <span className="text-slate-200 font-bold">{Math.min(totalRecords, page * limit)}</span> of{' '}
+                <span className="text-slate-200 font-bold">{totalRecords}</span> entries
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page <= 1 || loading}
+                >
+                  Previous
+                </Button>
+                <div className="text-xs text-slate-400 font-medium px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl">
+                  Page {page} / {totalPages}
+                </div>
+                <Button
+                  variant="secondary"
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page >= totalPages || loading}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 
