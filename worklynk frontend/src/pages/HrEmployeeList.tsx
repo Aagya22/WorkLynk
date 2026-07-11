@@ -156,6 +156,11 @@ export const HrEmployeeList: React.FC = () => {
         setProfileSuccess('Profile initialized successfully.');
         setProfileExists(true);
       }
+
+      setTimeout(() => {
+        setSelectedUserForProfile(null);
+        setProfileSuccess('');
+      }, 1500);
     } catch (err: any) {
       setProfileError(err.response?.data?.message || 'Failed to save profile.');
     } finally {
@@ -485,9 +490,8 @@ export const HrEmployeeList: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 id="payslipMonth"
-                label="Month (YYYY-MM)"
-                type="text"
-                placeholder="e.g. 2026-07"
+                label="Select Month"
+                type="month"
                 value={payslipMonth}
                 onChange={(e) => setPayslipMonth(e.target.value)}
                 required
