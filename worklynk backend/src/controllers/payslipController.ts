@@ -244,15 +244,15 @@ export const downloadPayslipPDF = async (req: AuthenticatedRequest, res: Respons
     doc.text(`Employee Email: ${employeeEmail}`);
     doc.moveDown();
 
-    doc.text(`Basic Salary: £${payslip.basicSalary}`);
-    doc.text(`Overtime Pay: £${payslip.overtimePay}`);
-    doc.text(`Bonus: £${payslip.bonus}`);
+    doc.text(`Basic Salary: Rs. ${payslip.basicSalary}`);
+    doc.text(`Overtime Pay: Rs. ${payslip.overtimePay}`);
+    doc.text(`Bonus: Rs. ${payslip.bonus}`);
     doc.moveDown();
-    doc.text(`Tax Deduction: £${payslip.taxDeduction}`);
-    doc.text(`National Insurance Deduction: £${payslip.niDeduction}`);
-    doc.text(`Other Deductions: £${payslip.otherDeductions}`);
+    doc.text(`Tax Deduction: Rs. ${payslip.taxDeduction}`);
+    doc.text(`National Insurance Deduction: Rs. ${payslip.niDeduction}`);
+    doc.text(`Other Deductions: Rs. ${payslip.otherDeductions}`);
     doc.moveDown();
-    doc.fontSize(14).text(`Net Salary: £${payslip.netSalary}`, { underline: true });
+    doc.fontSize(14).text(`Net Salary: Rs. ${payslip.netSalary}`, { underline: true });
     doc.moveDown();
     doc.fontSize(12).text(`Notes: ${payslip.notes || 'N/A'}`);
     doc.moveDown();

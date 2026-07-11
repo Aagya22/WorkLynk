@@ -494,7 +494,7 @@ export const Profile: React.FC = () => {
                           </label>
                           <input
                             type="text"
-                            value={profile.salary ? `£${profile.salary}` : 'N/A'}
+                            value={profile.salary ? `Rs. ${profile.salary}` : 'N/A'}
                             disabled
                             className="w-full px-4 py-2.5 bg-slate-950/40 border border-slate-900/60 text-slate-500 rounded-xl text-sm cursor-not-allowed font-mono"
                           />

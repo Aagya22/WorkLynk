@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { User } from '../models/user.model';
 import { Profile } from '../models/profile.model';
+import { Leave } from '../models/leave.model';
+import { Payslip } from '../models/payslip.model';
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
@@ -18,9 +20,11 @@ const seedDB = async () => {
     await mongoose.connect(dbUri);
     console.log('Database connected.');
 
-    console.log('Clearing existing users and profiles...');
+    console.log('Clearing existing database records...');
     await User.deleteMany({});
     await Profile.deleteMany({});
+    await Leave.deleteMany({});
+    await Payslip.deleteMany({});
 
     console.log('No users found in database. Starting seeding process...');
 

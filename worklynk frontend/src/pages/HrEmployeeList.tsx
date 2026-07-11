@@ -432,7 +432,7 @@ export const HrEmployeeList: React.FC = () => {
                 />
                 <Input
                   id="salary"
-                  label="Salary (Gross Annual £)"
+                  label="Salary (Gross Annual Rs.)"
                   type="number"
                   value={profileData.salary}
                   onChange={(e) => setProfileData({ ...profileData, salary: e.target.value })}
@@ -499,7 +499,7 @@ export const HrEmployeeList: React.FC = () => {
               />
               <Input
                 id="basicSalary"
-                label="Basic Salary (£)"
+                label="Basic Salary (Rs.)"
                 type="number"
                 value={basicSalary}
                 onChange={(e) => setBasicSalary(e.target.value)}
@@ -508,7 +508,7 @@ export const HrEmployeeList: React.FC = () => {
               />
               <Input
                 id="overtimePay"
-                label="Overtime Pay (£)"
+                label="Overtime Pay (Rs.)"
                 type="number"
                 value={overtimePay}
                 onChange={(e) => setOvertimePay(e.target.value)}
@@ -517,7 +517,7 @@ export const HrEmployeeList: React.FC = () => {
               />
               <Input
                 id="bonus"
-                label="Bonus (£)"
+                label="Bonus (Rs.)"
                 type="number"
                 value={bonus}
                 onChange={(e) => setBonus(e.target.value)}
@@ -526,7 +526,7 @@ export const HrEmployeeList: React.FC = () => {
               />
               <Input
                 id="taxDeduction"
-                label="Income Tax Deduction (£)"
+                label="Income Tax Deduction (Rs.)"
                 type="number"
                 value={taxDeduction}
                 onChange={(e) => setTaxDeduction(e.target.value)}
@@ -535,7 +535,7 @@ export const HrEmployeeList: React.FC = () => {
               />
               <Input
                 id="niDeduction"
-                label="National Insurance (NI) (£)"
+                label="National Insurance (NI) (Rs.)"
                 type="number"
                 value={niDeduction}
                 onChange={(e) => setNiDeduction(e.target.value)}
@@ -544,7 +544,7 @@ export const HrEmployeeList: React.FC = () => {
               />
               <Input
                 id="otherDeductions"
-                label="Other Deductions (£)"
+                label="Other Deductions (Rs.)"
                 type="number"
                 value={otherDeductions}
                 onChange={(e) => setOtherDeductions(e.target.value)}

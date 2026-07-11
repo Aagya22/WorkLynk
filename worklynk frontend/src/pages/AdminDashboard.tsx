@@ -37,7 +37,7 @@ export const AdminDashboard: React.FC = () => {
   const fetchAdminDashboard = async () => {
     try {
       const statsUrl = '/api/admin/stats';
-      const logsUrl = logFilter ? `/api/audit?limit=10&actionType=${logFilter}` : '/api/audit?limit=10';
+      const logsUrl = logFilter ? `/api/audit-logs?limit=10&actionType=${logFilter}` : '/api/audit-logs?limit=10';
       
       const [statsRes, logsRes] = await Promise.all([
         api.get(statsUrl),

@@ -45,7 +45,7 @@ export const Dashboard: React.FC = () => {
         // Latest payslip info
         const payslips = payslipsRes.data.payslips || [];
         const latestMonth = payslips[0]?.month || 'N/A';
-        const latestNet = payslips[0]?.netSalary ? `£${payslips[0].netSalary}` : 'N/A';
+        const latestNet = payslips[0]?.netSalary ? `Rs. ${payslips[0].netSalary}` : 'N/A';
 
         setStats({
           totalLeaves: leaves.length,

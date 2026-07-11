@@ -13,6 +13,7 @@ interface LeaveRequest {
   type: string;
   reason: string;
   status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  decisionComment?: string;
   managerComment?: string;
   createdAt: string;
 }
@@ -133,7 +134,7 @@ export const Leaves: React.FC = () => {
     {
       header: 'Type',
       accessor: (row: LeaveRequest) => (
-        <span className="capitalize font-medium text-slate-300">{row.type}</span>
+        <span className="capitalize font-medium text-slate-300">{(row as any).leaveType || row.type}</span>
       )
     },
     {
@@ -173,9 +174,9 @@ export const Leaves: React.FC = () => {
               Cancel
             </Button>
           )}
-          {row.managerComment && (
-            <span className="text-xs text-slate-500 italic" title={row.managerComment}>
-              Commented
+          {row.decisionComment && (
+            <span className="text-xs text-slate-500 italic" title={row.decisionComment}>
+              Comment: {row.decisionComment}
             </span>
           )}
         </div>

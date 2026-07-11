@@ -80,20 +80,20 @@ export const Payslips: React.FC = () => {
       header: 'Gross Salary',
       accessor: (row: Payslip) => {
         const gross = parseFloat(row.basicSalary) + parseFloat(row.overtimePay) + parseFloat(row.bonus);
-        return `£${gross.toFixed(2)}`;
+        return `Rs. ${gross.toFixed(2)}`;
       }
     },
     {
       header: 'Deductions',
       accessor: (row: Payslip) => {
         const ded = parseFloat(row.taxDeduction) + parseFloat(row.niDeduction) + parseFloat(row.otherDeductions);
-        return `£${ded.toFixed(2)}`;
+        return `Rs. ${ded.toFixed(2)}`;
       }
     },
     {
       header: 'Net Pay',
       accessor: (row: Payslip) => (
-        <span className="font-bold text-green-400">£{parseFloat(row.netSalary).toFixed(2)}</span>
+        <span className="font-bold text-green-400">Rs. {parseFloat(row.netSalary).toFixed(2)}</span>
       )
     },
     {
@@ -177,15 +177,15 @@ export const Payslips: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">Basic Salary</span>
-                    <span className="font-semibold text-slate-200">£{parseFloat(selectedPayslip.basicSalary).toFixed(2)}</span>
+                    <span className="font-semibold text-slate-200">Rs. {parseFloat(selectedPayslip.basicSalary).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">Overtime Pay</span>
-                    <span className="font-semibold text-slate-200">£{parseFloat(selectedPayslip.overtimePay).toFixed(2)}</span>
+                    <span className="font-semibold text-slate-200">Rs. {parseFloat(selectedPayslip.overtimePay).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">Bonus</span>
-                    <span className="font-semibold text-slate-200">£{parseFloat(selectedPayslip.bonus).toFixed(2)}</span>
+                    <span className="font-semibold text-slate-200">Rs. {parseFloat(selectedPayslip.bonus).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -198,15 +198,15 @@ export const Payslips: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">Income Tax</span>
-                    <span className="font-semibold text-red-400/90">£{parseFloat(selectedPayslip.taxDeduction).toFixed(2)}</span>
+                    <span className="font-semibold text-red-400/90">Rs. {parseFloat(selectedPayslip.taxDeduction).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">National Insurance (NI)</span>
-                    <span className="font-semibold text-red-400/90">£{parseFloat(selectedPayslip.niDeduction).toFixed(2)}</span>
+                    <span className="font-semibold text-red-400/90">Rs. {parseFloat(selectedPayslip.niDeduction).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">Other Deductions</span>
-                    <span className="font-semibold text-red-400/90">£{parseFloat(selectedPayslip.otherDeductions).toFixed(2)}</span>
+                    <span className="font-semibold text-red-400/90">Rs. {parseFloat(selectedPayslip.otherDeductions).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -216,7 +216,7 @@ export const Payslips: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Net Take-Home Pay</span>
                   <span className="text-xl font-extrabold text-green-400">
-                    £{parseFloat(selectedPayslip.netSalary).toFixed(2)}
+                    Rs. {parseFloat(selectedPayslip.netSalary).toFixed(2)}
                   </span>
                 </div>
               </div>
