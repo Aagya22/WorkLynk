@@ -32,11 +32,22 @@ export const HrLeaveApprovals: React.FC = () => {
   const [processing, setProcessing] = useState(false);
   const [modalError, setModalError] = useState('');
 
-  const fetchAllLeaves = async () => {
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const limit = 10;
+
+  const fetchAllLeaves = async (targetPage: number = 1) => {
     try {
-      const response = await api.get('/api/leaves');
-      if (response.data?.leaves) {
-        setLeaves(response.data.leaves);
+      const response = await api.get(`/api/leaves?limit=${limit}&page=${targetPage}`);
+      if (response.data) {
+        setLeaves(response.data.leaves || []);
+        if (response.data.pagination) {
+          setPage(response.data.pagination.page);
+          setTotalPages(response.data.pagination.totalPages || 1);
+          setTotalRecords(response.data.pagination.total || 0);
+        }
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to retrieve leave requests database.');
@@ -46,8 +57,14 @@ export const HrLeaveApprovals: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchAllLeaves();
+    fetchAllLeaves(1);
   }, []);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      fetchAllLeaves(newPage);
+    }
+  };
 
   const handleDecisionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,8 +207,38 @@ export const HrLeaveApprovals: React.FC = () => {
             No active or historical leave records found in database.
           </div>
         ) : (
-          <div className="glassmorphism rounded-2xl border border-white/5 overflow-hidden">
-            <Table data={leaves} columns={columns} />
+          <div className="space-y-4">
+            <div className="glassmorphism rounded-2xl border border-white/5 overflow-hidden">
+              <Table data={leaves} columns={columns} />
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-950/20 p-4 border border-white/5 rounded-2xl">
+              <div className="text-xs text-slate-400 font-medium font-sans">
+                Showing leaves <span className="text-slate-200 font-bold">{Math.min(totalRecords, (page - 1) * limit + 1)}</span> to{' '}
+                <span className="text-slate-200 font-bold">{Math.min(totalRecords, page * limit)}</span> of{' '}
+                <span className="text-slate-200 font-bold">{totalRecords}</span> entries
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page <= 1 || loading}
+                >
+                  Previous
+                </Button>
+                <div className="text-xs text-slate-400 font-medium px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl">
+                  Page {page} / {totalPages}
+                </div>
+                <Button
+                  variant="secondary"
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page >= totalPages || loading}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 

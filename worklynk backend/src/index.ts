@@ -94,7 +94,8 @@ app.use('/api/admin', adminRoutes);
 import { protect } from './middlewares/authMiddleware';
 
 // Serve static profile photos securely
-app.use('/uploads', protect, express.static(path.join(__dirname, '../uploads')));
+const uploadFolder = process.env.UPLOAD_DIR || 'uploads';
+app.use('/uploads', protect, express.static(path.join(__dirname, '..', uploadFolder)));
 
 // Health Check Endpoint
 app.get('/health', (req: Request, res: Response) => {

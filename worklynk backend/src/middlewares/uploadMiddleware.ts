@@ -34,7 +34,8 @@ export const validateMagicBytes = async (
   }
 
   try {
-    const uploadDir = path.join(__dirname, '../../uploads/profile-photos');
+    const uploadFolder = process.env.UPLOAD_DIR || 'uploads';
+    const uploadDir = path.join(__dirname, '../..', uploadFolder, 'profile-photos');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
