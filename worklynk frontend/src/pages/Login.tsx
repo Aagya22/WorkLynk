@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
+import api from '../utils/api';
 
 export const Login: React.FC = () => {
   const { login } = useAuth();
@@ -11,46 +12,26 @@ export const Login: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaImage, setCaptchaImage] = useState('');
+  const [captchaKey, setCaptchaKey] = useState('');
+  const [captchaText, setCaptchaText] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const captchaRef = useRef<HTMLDivElement>(null);
-  const captchaWidgetId = useRef<any>(null);
+  const fetchNewCaptcha = async () => {
+    try {
+      const res = await api.get('/api/auth/captcha');
+      if (res.data?.image) {
+        setCaptchaImage(res.data.image);
+        setCaptchaKey(res.data.captchaKey);
+      }
+    } catch (err) {
+      console.error('Failed to load CAPTCHA:', err);
+    }
+  };
 
   useEffect(() => {
-    // Poll for the global hcaptcha object injected by the script in index.html
-    const interval = setInterval(() => {
-      if ((window as any).hcaptcha) {
-        clearInterval(interval);
-        if (captchaRef.current && captchaWidgetId.current === null) {
-          try {
-            captchaWidgetId.current = (window as any).hcaptcha.render(captchaRef.current, {
-              sitekey: (import.meta as any).env.VITE_HCAPTCHA_SITEKEY || '10000000-ffff-ffff-ffff-000000000001',
-              theme: 'dark',
-              callback: (token: string) => {
-                setCaptchaToken(token);
-                setError('');
-              },
-              'expired-callback': () => {
-                setCaptchaToken('');
-              }
-            });
-          } catch (e) {
-            console.error('Failed to render hCaptcha widget:', e);
-          }
-        }
-      }
-    }, 100);
-
-    return () => {
-      clearInterval(interval);
-      if (captchaWidgetId.current !== null && (window as any).hcaptcha) {
-        try {
-          (window as any).hcaptcha.reset(captchaWidgetId.current);
-        } catch (e) {}
-      }
-    };
+    fetchNewCaptcha();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,7 +40,7 @@ export const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const data = await login(email, password, captchaToken);
+      const data = await login(email, password, captchaText, captchaKey);
       
       if (data.mfaRequired) {
         navigate('/verify-mfa', { state: { tempToken: data.tempToken } });
@@ -70,13 +51,8 @@ export const Login: React.FC = () => {
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please verify your credentials.');
-      // Reset hCaptcha widget on error to force a new check
-      if (captchaWidgetId.current !== null && (window as any).hcaptcha) {
-        try {
-          (window as any).hcaptcha.reset(captchaWidgetId.current);
-          setCaptchaToken('');
-        } catch (e) {}
-      }
+      fetchNewCaptcha();
+      setCaptchaText('');
     } finally {
       setLoading(false);
     }
@@ -115,9 +91,45 @@ export const Login: React.FC = () => {
           required
         />
 
-        {/* hCaptcha placeholder wrapper */}
-        <div className="flex justify-center py-1">
-          <div ref={captchaRef}></div>
+        {/* Text-Based CAPTCHA Section */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 flex items-center justify-center bg-[#070B18] rounded-xl border border-white/[0.08] h-11 relative overflow-hidden select-none">
+              {captchaImage ? (
+                <img
+                  src={captchaImage}
+                  alt="CAPTCHA"
+                  className="h-full object-contain cursor-pointer"
+                  onClick={fetchNewCaptcha}
+                  title="Click to refresh CAPTCHA"
+                />
+              ) : (
+                <span className="text-xs text-slate-500">Loading...</span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={fetchNewCaptcha}
+              className="p-3 bg-[#0D1326] border border-white/[0.08] hover:border-[#4F8CFF]/50 text-slate-400 hover:text-slate-200 rounded-xl transition-all h-11 flex items-center justify-center focus:outline-none"
+              title="Refresh CAPTCHA"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89" />
+              </svg>
+            </button>
+          </div>
+
+          <Input
+            id="captchaText"
+            label="Verification Code"
+            type="text"
+            placeholder="Type verification code above"
+            value={captchaText}
+            onChange={(e) => setCaptchaText(e.target.value.toUpperCase())}
+            required
+            autoComplete="off"
+            className="font-mono uppercase text-center tracking-[0.2em]"
+          />
         </div>
 
         <Button type="submit" variant="primary" fullWidth loading={loading}>

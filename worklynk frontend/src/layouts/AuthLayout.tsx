@@ -22,10 +22,6 @@ export const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }
         <div className="glassmorphism rounded-2xl p-8 border border-white/5 shadow-2xl flex flex-col w-full relative">
           {children}
         </div>
-        
-        <div className="text-center mt-6 text-xs text-slate-500 font-medium">
-          Protected by AES-256-GCM field level encryption and TOTP Multi-Factor Authentication.
-        </div>
       </div>
     </div>
   );

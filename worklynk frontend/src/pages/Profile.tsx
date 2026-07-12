@@ -19,7 +19,7 @@ interface ProfileData {
 
 export const Profile: React.FC = () => {
   const { user, updateUser } = useAuth();
-  
+
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -73,7 +73,7 @@ export const Profile: React.FC = () => {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
+
     setError('');
     setSuccess('');
     setSaving(true);
@@ -84,7 +84,7 @@ export const Profile: React.FC = () => {
         phoneNumber,
         emergencyContact
       });
-      
+
       setSuccess('Profile updated successfully.');
       setIsEditing(false);
       if (response.data?.profile) {
@@ -112,7 +112,7 @@ export const Profile: React.FC = () => {
     setUploadError('');
     setUploadSuccess('');
     const file = e.target.files?.[0];
-    
+
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
@@ -175,7 +175,7 @@ export const Profile: React.FC = () => {
       if (fileInput) {
         fileInput.value = '';
       }
-      
+
       if (profile) {
         setProfile({
           ...profile,

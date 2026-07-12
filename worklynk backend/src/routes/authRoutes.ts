@@ -9,7 +9,8 @@ import {
   refresh,
   changePassword,
   forceChangePassword,
-  getMe
+  getMe,
+  getCaptcha
 } from '../controllers/authController';
 import { protect, restrictTo } from '../middlewares/authMiddleware';
 import { authLimiter, mfaSetupLimiter } from '../middlewares/rateLimit';
@@ -17,6 +18,7 @@ import { authLimiter, mfaSetupLimiter } from '../middlewares/rateLimit';
 const router = Router();
 
 // Public Routes
+router.get('/captcha', getCaptcha);
 router.post('/login', authLimiter, login);
 router.post('/mfa/verify', mfaSetupLimiter, verifyMFA);
 router.post('/refresh', refresh);

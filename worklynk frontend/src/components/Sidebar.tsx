@@ -161,16 +161,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           key={index}
           to={item.path}
           onClick={isMobile ? () => setMobileOpen(false) : undefined}
-          className={`relative flex items-center h-11 px-[14px] rounded-[12px] transition-all duration-200 group ${
-            active
+          className={`relative flex items-center h-11 px-[14px] rounded-[12px] transition-all duration-200 group ${active
               ? 'bg-[#4F8CFF]/10 text-white font-semibold shadow-[0_0_12px_rgba(79,140,255,0.12)] border border-[#4F8CFF]/10'
               : 'text-slate-400 hover:bg-[#1B2234]/40 hover:text-white'
-          }`}
+            }`}
         >
           {active && (
             <div className="absolute left-0 top-[8px] bottom-[8px] w-[3px] bg-[#4F8CFF] rounded-r-md" />
           )}
-          
+
           <div className={`flex-shrink-0 ${active ? 'text-[#4F8CFF]' : 'text-slate-500 group-hover:text-slate-200 transition-colors'}`}>
             {item.icon}
           </div>
@@ -201,9 +200,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:flex flex-col bg-[#070B18] border-r border-[#1B2234] z-20 backdrop-blur-xl h-screen sticky top-0 transition-all duration-300 relative ${
-          isCollapsed ? 'w-[70px] px-2.5' : 'w-[240px] px-5'
-        }`}
+        className={`hidden md:flex flex-col bg-[#070B18] border-r border-[#1B2234] z-20 backdrop-blur-xl h-screen sticky top-0 transition-all duration-300 relative ${isCollapsed ? 'w-[70px] px-2.5' : 'w-[240px] px-5'
+          }`}
       >
         {/* Border-floating collapse toggle button */}
         <button
@@ -315,9 +313,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Mobile Drawer sidebar content */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 w-64 bg-[#070B18] border-r border-[#1B2234] z-40 backdrop-blur-xl md:hidden transition-transform duration-300 transform flex flex-col px-6 ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed top-0 bottom-0 left-0 w-64 bg-[#070B18] border-r border-[#1B2234] z-40 backdrop-blur-xl md:hidden transition-transform duration-300 transform flex flex-col px-6 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div className="pt-7 pb-6 border-b border-slate-900/60 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-3.5">

@@ -1,6 +1,7 @@
 /// <reference path="../types/speakeasy.d.ts" />
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 import jwt from 'jsonwebtoken';
@@ -77,32 +78,35 @@ export const register = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 export const login = async (req: AuthenticatedRequest, res: Response) => {
-  const { email, password, captchaToken } = req.body;
+  const { email, password, captchaText, captchaKey } = req.body;
   const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
   const userAgent = req.headers['user-agent'] || 'unknown';
 
   try {
-    // hCaptcha verification (bypassed in test/mock mode if no HCAPTCHA_SECRET is configured)
+    // Custom Text-Based CAPTCHA verification
     if (process.env.NODE_ENV !== 'test') {
-      const hcaptchaSecret = process.env.HCAPTCHA_SECRET;
-      if (hcaptchaSecret) {
-        if (!captchaToken) {
-          return res.status(400).json({ message: 'hCaptcha token is required.' });
+      if (!captchaText || !captchaKey) {
+        return res.status(400).json({ message: 'CAPTCHA verification code is required.' });
+      }
+
+      try {
+        const decoded = Buffer.from(captchaKey, 'base64').toString('utf-8');
+        const [expectedText, expiresStr, signature] = decoded.split('.');
+        const expires = parseInt(expiresStr, 10);
+        
+        if (Date.now() > expires) {
+          return res.status(400).json({ message: 'CAPTCHA has expired. Please refresh and try again.' });
         }
-        try {
-          const verifyRes = await fetch('https://hcaptcha.com/siteverify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `secret=${hcaptchaSecret}&response=${captchaToken}`
-          });
-          const verifyData: any = await verifyRes.json();
-          if (!verifyData.success) {
-            return res.status(400).json({ message: 'hCaptcha verification failed. Please try again.' });
-          }
-        } catch (fetchError) {
-          console.error('hCaptcha siteverify request failed:', fetchError);
-          return res.status(500).json({ message: 'An internal server error occurred.' });
+        
+        const secret = process.env.JWT_SECRET || 'worklynk-fallback-secret';
+        const expectedData = `${expectedText}.${expires}`;
+        const expectedSignature = crypto.createHmac('sha256', secret).update(expectedData).digest('hex');
+        
+        if (expectedSignature !== signature || captchaText.toUpperCase() !== expectedText.toUpperCase()) {
+          return res.status(400).json({ message: 'Invalid CAPTCHA code. Please try again.' });
         }
+      } catch (e) {
+        return res.status(400).json({ message: 'CAPTCHA verification failed.' });
       }
     }
 
@@ -666,5 +670,74 @@ export const getMe = async (req: AuthenticatedRequest, res: Response) => {
   } catch (error: any) {
     console.error('Error retrieving user details:', error);
     return res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+};
+
+const generateCaptchaText = () => {
+  const chars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+  let text = '';
+  for (let i = 0; i < 5; i++) {
+    text += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return text;
+};
+
+export const getCaptcha = async (req: Request, res: Response) => {
+  try {
+    const text = generateCaptchaText();
+    const expires = Date.now() + 3 * 60 * 1000; // 3 minutes expiration
+    const secret = process.env.JWT_SECRET || 'worklynk-fallback-secret';
+    
+    const dataToSign = `${text}.${expires}`;
+    const signature = crypto.createHmac('sha256', secret).update(dataToSign).digest('hex');
+    const captchaKey = Buffer.from(`${dataToSign}.${signature}`).toString('base64');
+    
+    // Generate SVG Content
+    const width = 150;
+    const height = 44;
+    
+    let lines = '';
+    for (let i = 0; i < 4; i++) {
+      const x1 = Math.random() * width;
+      const y1 = Math.random() * height;
+      const x2 = Math.random() * width;
+      const y2 = Math.random() * height;
+      lines += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(79, 140, 255, 0.4)" stroke-width="1.5" />`;
+    }
+    
+    let dots = '';
+    for (let i = 0; i < 35; i++) {
+      const cx = Math.random() * width;
+      const cy = Math.random() * height;
+      const r = Math.random() * 1.5;
+      dots += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="rgba(148, 163, 184, 0.35)" />`;
+    }
+
+    let textGroup = '';
+    const chars = text.split('');
+    const charWidth = width / (chars.length + 1);
+    
+    for (let i = 0; i < chars.length; i++) {
+      const x = (i + 0.8) * charWidth;
+      const y = 30 + (Math.random() * 6 - 3); // random vertical offset
+      const rot = Math.random() * 24 - 12; // random rotation
+      textGroup += `<text x="${x}" y="${y}" font-family="monospace" font-size="24" font-weight="bold" fill="#F8FAFC" transform="rotate(${rot} ${x} ${y})">${chars[i]}</text>`;
+    }
+
+    const svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="background-color: #070B18; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
+      ${lines}
+      ${dots}
+      ${textGroup}
+    </svg>`;
+    
+    const base64Svg = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+
+    res.json({
+      image: base64Svg,
+      captchaKey
+    });
+  } catch (error) {
+    console.error('Failed to generate CAPTCHA:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };

@@ -11,7 +11,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string, captchaToken: string) => Promise<any>;
+  login: (email: string, password: string, captchaText: string, captchaKey: string) => Promise<any>;
   verifyMfa: (tempToken: string, code: string) => Promise<any>;
   logout: () => Promise<void>;
   updateUser: (user: User | null) => void;
@@ -56,9 +56,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string, captchaToken: string) => {
-    const response = await api.post('/api/auth/login', { email, password, captchaToken });
-    
+  const login = async (email: string, password: string, captchaText: string, captchaKey: string) => {
+    const response = await api.post('/api/auth/login', { email, password, captchaText, captchaKey });
+
     if (response.data?.user) {
       const u = response.data.user;
       setUser(u);
