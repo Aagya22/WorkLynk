@@ -1,22 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import api from '../utils/api';
 
-export const Login: React.FC = () => {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-
+export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [captchaImage, setCaptchaImage] = useState('');
   const [captchaKey, setCaptchaKey] = useState('');
   const [captchaText, setCaptchaText] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const fetchNewCaptcha = async () => {
     try {
@@ -40,17 +36,14 @@ export const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const data = await login(email, password, captchaText, captchaKey);
-      
-      if (data.mfaRequired) {
-        navigate('/verify-mfa', { state: { tempToken: data.tempToken } });
-      } else if (data.passwordExpired) {
-        navigate('/force-change-password', { state: { userId: data.userId, email } });
-      } else {
-        navigate('/dashboard');
-      }
+      await api.post('/api/auth/forgot-password', {
+        email,
+        captchaText,
+        captchaKey
+      });
+      setSuccess(true);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please verify your credentials.');
+      setError(err.response?.data?.message || 'Failed to submit request. Please try again.');
       fetchNewCaptcha();
       setCaptchaText('');
     } finally {
@@ -58,12 +51,49 @@ export const Login: React.FC = () => {
     }
   };
 
+  if (success) {
+    return (
+      <AuthLayout>
+        <div className="space-y-6 text-center">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-500/10 border border-green-500/30">
+            <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 19v-8.93a2 2 0 01.89-1.664l8-5.333a2 2 0 012.22 0l8 5.333A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-2.25-1.5a2 2 0 00-2.22 0l-2.25 1.5" />
+            </svg>
+          </div>
+          
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-slate-100 uppercase tracking-wider">
+              Request Received
+            </h2>
+            <p className="text-xs text-slate-400 leading-relaxed font-sans px-4">
+              If an active account is registered with **{email}**, we have sent an instruction email containing a secure password reset link. 
+              Please check your inbox (and spam folder) to complete the recovery.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <Link to="/login" className="w-full inline-block">
+              <Button variant="primary" fullWidth>
+                Back to Login
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </AuthLayout>
+    );
+  }
+
   return (
     <AuthLayout>
       <form onSubmit={handleSubmit} className="space-y-5">
-        <h2 className="text-xl font-bold text-slate-100 uppercase tracking-wider text-center">
-          Account Login
-        </h2>
+        <div className="text-center space-y-1">
+          <h2 className="text-xl font-bold text-slate-100 uppercase tracking-wider">
+            Password Recovery
+          </h2>
+          <p className="text-[10px] text-slate-400 font-medium">
+            Enter your email below to request a secure password recovery link.
+          </p>
+        </div>
         
         {error && (
           <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl text-center">
@@ -73,21 +103,11 @@ export const Login: React.FC = () => {
 
         <Input
           id="email"
-          label="Email Address"
+          label="Account Email Address"
           type="email"
           placeholder="employee@worklynk.local"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-
-        <Input
-          id="password"
-          label="Password"
-          type="password"
-          placeholder="••••••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
           required
         />
 
@@ -133,15 +153,12 @@ export const Login: React.FC = () => {
         </div>
 
         <Button type="submit" variant="primary" fullWidth loading={loading}>
-          Log In
+          Send Reset Link
         </Button>
 
-        <div className="flex items-center justify-between pt-2">
-          <Link to="/forgot-password" className="text-xs font-semibold text-slate-400 hover:text-primary-400 transition-colors">
-            Forgot Password?
-          </Link>
-          <Link to="/register" className="text-xs font-semibold text-slate-400 hover:text-primary-400 transition-colors">
-            Register Account
+        <div className="text-center pt-2">
+          <Link to="/login" className="text-xs font-semibold text-slate-400 hover:text-primary-400 transition-colors">
+            Back to Login
           </Link>
         </div>
       </form>

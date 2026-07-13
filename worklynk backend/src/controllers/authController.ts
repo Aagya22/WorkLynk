@@ -835,3 +835,144 @@ export const getCaptcha = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email, captchaText, captchaKey } = req.body;
+
+  try {
+    if (!email || !captchaText || !captchaKey) {
+      return res.status(400).json({ message: 'All fields (email, verification code) are required.' });
+    }
+
+    // CAPTCHA verification
+    try {
+      const decoded = Buffer.from(captchaKey, 'base64').toString('utf-8');
+      const [expectedText, expiresStr, signature] = decoded.split('.');
+      const expires = parseInt(expiresStr, 10);
+      
+      if (Date.now() > expires) {
+        return res.status(400).json({ message: 'CAPTCHA has expired. Please refresh and try again.' });
+      }
+      
+      const secret = process.env.JWT_SECRET || 'worklynk-fallback-secret';
+      const expectedData = `${expectedText}.${expires}`;
+      const expectedSignature = crypto.createHmac('sha256', secret).update(expectedData).digest('hex');
+      
+      if (expectedSignature !== signature || captchaText.toUpperCase() !== expectedText.toUpperCase()) {
+        return res.status(400).json({ message: 'Invalid CAPTCHA code. Please try again.' });
+      }
+    } catch (e) {
+      return res.status(400).json({ message: 'CAPTCHA verification failed.' });
+    }
+
+    const user = await User.findOne({ email });
+
+    // Prevent User Enumeration vulnerability
+    const genericResponse = { message: 'If this email address is registered, a password reset link has been sent.' };
+    if (!user || !user.isActive) {
+      return res.status(200).json(genericResponse);
+    }
+
+    // Generate cryptographically secure token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    // Token expires in 1 hour
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = new Date(Date.now() + 3600000);
+    await user.save();
+
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5000'}/reset-password?token=${resetToken}`;
+
+    const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+    await AuditLog.create({
+      userId: user._id,
+      actionType: 'PASSWORD_RESET_REQUESTED',
+      targetResource: `user:${user._id}`,
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'] || 'unknown'
+    });
+
+    await sendSecurityAlertEmail(
+      email,
+      'Worklynk Password Recovery',
+      `You are receiving this email because you (or someone else) have requested a password reset for your Worklynk account.\n\nPlease click on the following link, or paste it into your browser to complete the process:\n\n${resetUrl}\n\nIf you did not request this, please ignore this email and your password will remain unchanged.\n\nNote: This link is valid for 1 hour.`
+    );
+
+    return res.status(200).json(genericResponse);
+  } catch (error: any) {
+    console.error('Error during forgot password:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  const { token, password } = req.body;
+
+  try {
+    if (!token || !password) {
+      return res.status(400).json({ message: 'Reset token and new password are required.' });
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: new Date() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired password reset token.' });
+    }
+
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message: 'Password must be at least 12 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
+      });
+    }
+
+    const isReused = await user.isPasswordReused(password);
+    if (isReused) {
+      return res.status(400).json({
+        message: 'You cannot reuse your current password or any of your last 5 passwords.'
+      });
+    }
+
+    await user.addToPasswordHistory(user.passwordHash);
+
+    user.passwordHash = await bcrypt.hash(password, 12);
+    user.passwordChangedAt = new Date();
+    user.sessionVersion += 1;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    user.failedLoginCount = 0;
+    user.lockedUntil = null;
+    await user.save();
+
+    const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+    await AuditLog.create({
+      userId: user._id,
+      actionType: 'PASSWORD_RESET_SUCCESS',
+      targetResource: `user:${user._id}`,
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'] || 'unknown'
+    });
+
+    await Notification.create({
+      userId: user._id,
+      title: 'Password Reset Successful',
+      message: 'Your password has been successfully reset. You can now log in with your new password.',
+      type: 'security'
+    });
+
+    await sendSecurityAlertEmail(
+      user.email,
+      'Your Worklynk password has been reset',
+      'The password for your Worklynk account was successfully reset. If you did not make this change, please contact system administration immediately.'
+    );
+
+    return res.status(200).json({ message: 'Your password has been updated. Please log in with your new password.' });
+  } catch (error: any) {
+    console.error('Error during password reset execution:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+};

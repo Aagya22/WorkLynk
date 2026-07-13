@@ -11,10 +11,12 @@ import {
   forceChangePassword,
   getMe,
   getCaptcha,
-  registerSelf
+  registerSelf,
+  forgotPassword,
+  resetPassword
 } from '../controllers/authController';
 import { protect, restrictTo } from '../middlewares/authMiddleware';
-import { authLimiter, mfaSetupLimiter } from '../middlewares/rateLimit';
+import { authLimiter, mfaSetupLimiter, passwordResetLimiter } from '../middlewares/rateLimit';
 
 const router = Router();
 
@@ -25,6 +27,8 @@ router.post('/login', authLimiter, login);
 router.post('/mfa/verify', mfaSetupLimiter, verifyMFA);
 router.post('/refresh', refresh);
 router.post('/force-change-password', forceChangePassword);
+router.post('/forgot-password', passwordResetLimiter, forgotPassword);
+router.post('/reset-password', passwordResetLimiter, resetPassword);
 
 // Authenticated Routes
 router.get('/me', protect, getMe);
