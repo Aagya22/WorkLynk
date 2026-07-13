@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/user.model';
 import { BlacklistedToken } from '../models/blacklist.model';
 import { AuditLog } from '../models/audit-log.model';
+import { Notification } from '../models/notification.model';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
 import {
   generateAccessToken,
@@ -136,6 +137,17 @@ export const registerSelf = async (req: Request, res: Response) => {
       userAgent: req.headers['user-agent'] || 'unknown',
       metadata: { registeredEmail: email }
     });
+
+    // Notify all admins about the registration request
+    const admins = await User.find({ role: 'admin' });
+    for (const admin of admins) {
+      await Notification.create({
+        userId: admin._id,
+        title: 'New Registration Request',
+        message: `A new registration request from ${email} is pending approval.`,
+        type: 'security'
+      });
+    }
 
     return res.status(201).json({
       message: 'Registration request submitted successfully. An administrator must approve your account before you can log in.',

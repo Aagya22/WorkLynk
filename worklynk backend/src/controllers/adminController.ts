@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { User } from '../models/user.model';
 import { AuditLog } from '../models/audit-log.model';
 import { Leave } from '../models/leave.model';
+import { Notification } from '../models/notification.model';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
 
 const sanitizeInput = (text: string): string => {
@@ -268,6 +269,14 @@ export const reviewUserRegistration = async (req: AuthenticatedRequest, res: Res
       ipAddress: clientIP,
       userAgent: req.headers['user-agent'] || 'unknown',
       metadata: { targetApprovalStatus: status }
+    });
+
+    // Notify the user about their registration review status
+    await Notification.create({
+      userId: user._id,
+      title: `Registration Request ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+      message: `Your registration request has been ${status} by the administrator.`,
+      type: 'security'
     });
 
     return res.status(200).json({

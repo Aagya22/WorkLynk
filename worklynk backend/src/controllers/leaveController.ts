@@ -1,5 +1,7 @@
 import { Response } from 'express';
 import { Leave } from '../models/leave.model';
+import { User } from '../models/user.model';
+import { Notification } from '../models/notification.model';
 import { AuditLog } from '../models/audit-log.model';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
 
@@ -87,6 +89,17 @@ export const requestLeave = async (req: AuthenticatedRequest, res: Response) => 
       userAgent: req.headers['user-agent'] || 'unknown',
       metadata: { durationDays: Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1 }
     });
+
+    // Notify HR managers and Admin
+    const adminsAndHr = await User.find({ role: { $in: ['hr_manager', 'admin'] } });
+    for (const recipient of adminsAndHr) {
+      await Notification.create({
+        userId: recipient._id,
+        title: 'New Leave Request',
+        message: `A new leave request from ${req.user!.email} is pending approval.`,
+        type: 'leave'
+      });
+    }
 
     return res.status(201).json({ message: 'Leave request submitted successfully.', leave });
   } catch (error: any) {
@@ -234,6 +247,14 @@ export const decideLeave = async (req: AuthenticatedRequest, res: Response) => {
       ipAddress: clientIP,
       userAgent: req.headers['user-agent'] || 'unknown',
       metadata: { status, reason: decisionComment, targetEmployeeId: leave.employeeId }
+    });
+
+    // Notify the employee about the decision
+    await Notification.create({
+      userId: leave.employeeId,
+      title: `Leave Request ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+      message: `Your leave request from ${leave.startDate.toLocaleDateString()} to ${leave.endDate.toLocaleDateString()} has been ${status}.`,
+      type: 'leave'
     });
 
     return res.status(200).json({ message: `Leave request successfully ${status}.`, leave });

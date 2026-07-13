@@ -5,6 +5,7 @@ import { Payslip } from '../models/payslip.model';
 import { User } from '../models/user.model';
 import { Profile } from '../models/profile.model';
 import { AuditLog } from '../models/audit-log.model';
+import { Notification } from '../models/notification.model';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
 
 const sanitizeInput = (text: string): string => {
@@ -115,6 +116,14 @@ export const createPayslip = async (req: AuthenticatedRequest, res: Response) =>
 
     await session.commitTransaction();
     session.endSession();
+
+    // Notify the employee about the new payslip publication
+    await Notification.create({
+      userId: employeeId,
+      title: 'New Payslip Published',
+      message: `Your payslip for ${month} has been published and is ready for download.`,
+      type: 'payslip'
+    });
 
     return res.status(201).json({ message: 'Payslip created successfully.', payslip });
   } catch (error: any) {
