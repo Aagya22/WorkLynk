@@ -5,7 +5,8 @@ import {
   updateUserRole,
   unlockUser,
   forcePasswordReset,
-  getSystemStats
+  getSystemStats,
+  reviewUserRegistration
 } from '../controllers/adminController';
 import { protect, restrictTo } from '../middlewares/authMiddleware';
 
@@ -22,6 +23,7 @@ router.get('/stats', restrictTo('admin', 'hr_manager'), getSystemStats);
 router.use(restrictTo('admin'));
 router.put('/users/:id/status', updateUserStatus);
 router.put('/users/:id/role', updateUserRole);
+router.put('/users/:id/approval', reviewUserRegistration);
 router.post('/users/:id/unlock', unlockUser);
 router.post('/users/:id/force-password-reset', forcePasswordReset);
 

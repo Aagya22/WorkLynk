@@ -14,6 +14,7 @@ interface UserRecord {
   failedLoginCount: number;
   lockedUntil: string | null;
   createdAt: string;
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
 }
 
 export const AdminUserManagement: React.FC = () => {
@@ -115,6 +116,19 @@ export const AdminUserManagement: React.FC = () => {
     }
   };
 
+  const handleReviewApproval = async (id: string, status: 'approved' | 'rejected') => {
+    if (!window.confirm(`Are you sure you want to ${status} this user registration?`)) return;
+    setProcessingId(id);
+    try {
+      await api.put(`/api/admin/users/${id}/approval`, { status });
+      fetchUsers(page);
+    } catch (err: any) {
+      alert(err.response?.data?.message || `Failed to ${status} user registration request.`);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const handleChangeRole = async (id: string, newRole: string) => {
     if (!window.confirm(`Are you sure you want to change this user's role to ${newRole}?`)) return;
     setProcessingId(id);
@@ -166,8 +180,8 @@ export const AdminUserManagement: React.FC = () => {
         <select
           value={row.role}
           onChange={(e) => handleChangeRole(row._id, e.target.value)}
-          disabled={processingId === row._id}
-          className="px-2 py-1 bg-slate-950 border border-slate-900 focus:border-primary-500/50 text-slate-300 text-xs rounded-xl focus:outline-none focus:ring-1 focus:ring-primary-500/50 cursor-pointer capitalize"
+          disabled={processingId === row._id || row.approvalStatus === 'pending'}
+          className="px-2 py-1 bg-slate-950 border border-slate-900 focus:border-primary-500/50 text-slate-300 text-xs rounded-xl focus:outline-none focus:ring-1 focus:ring-primary-500/50 cursor-pointer capitalize disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <option value="employee">Employee</option>
           <option value="hr_manager">HR Manager</option>
@@ -181,11 +195,21 @@ export const AdminUserManagement: React.FC = () => {
         const isLocked = row.lockedUntil && new Date(row.lockedUntil) > new Date();
         return (
           <div className="flex flex-col space-y-1">
-            <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider w-fit ${
-              row.isActive ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10'
-            }`}>
-              {row.isActive ? 'Active' : 'Suspended'}
-            </span>
+            {row.approvalStatus === 'pending' ? (
+              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider text-amber-400 bg-amber-500/10 w-fit">
+                Pending Approval
+              </span>
+            ) : row.approvalStatus === 'rejected' ? (
+              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider text-rose-400 bg-rose-500/10 w-fit">
+                Rejected
+              </span>
+            ) : (
+              <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider w-fit ${
+                row.isActive ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10'
+              }`}>
+                {row.isActive ? 'Active' : 'Suspended'}
+              </span>
+            )}
             {isLocked && (
               <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider text-rose-400 bg-rose-500/10 w-fit">
                 LOCKED
@@ -199,6 +223,30 @@ export const AdminUserManagement: React.FC = () => {
       header: 'Actions Control',
       accessor: (row: UserRecord) => {
         const isLocked = row.lockedUntil && new Date(row.lockedUntil) > new Date();
+        
+        if (row.approvalStatus === 'pending') {
+          return (
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="primary"
+                onClick={() => handleReviewApproval(row._id, 'approved')}
+                disabled={processingId === row._id}
+                className="!bg-green-600 hover:!bg-green-700 text-white border-transparent"
+              >
+                Approve
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => handleReviewApproval(row._id, 'rejected')}
+                disabled={processingId === row._id}
+                className="!bg-red-950/40 hover:!bg-red-900/60 border-red-500/20 text-red-400"
+              >
+                Reject
+              </Button>
+            </div>
+          );
+        }
+
         return (
           <div className="flex items-center space-x-2">
             <Button

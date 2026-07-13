@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import api from '../utils/api';
 
-export const Login: React.FC = () => {
-  const { login } = useAuth();
-  const navigate = useNavigate();
+export const Register: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [captchaImage, setCaptchaImage] = useState('');
   const [captchaKey, setCaptchaKey] = useState('');
   const [captchaText, setCaptchaText] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const fetchNewCaptcha = async () => {
     try {
@@ -37,20 +36,23 @@ export const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    setLoading(true);
     try {
-      const data = await login(email, password, captchaText, captchaKey);
-      
-      if (data.mfaRequired) {
-        navigate('/verify-mfa', { state: { tempToken: data.tempToken } });
-      } else if (data.passwordExpired) {
-        navigate('/force-change-password', { state: { userId: data.userId, email } });
-      } else {
-        navigate('/dashboard');
-      }
+      await api.post('/api/auth/register-self', {
+        email,
+        password,
+        captchaText,
+        captchaKey
+      });
+      setSuccess(true);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please verify your credentials.');
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
       fetchNewCaptcha();
       setCaptchaText('');
     } finally {
@@ -58,11 +60,43 @@ export const Login: React.FC = () => {
     }
   };
 
+  if (success) {
+    return (
+      <AuthLayout>
+        <div className="space-y-6 text-center">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-500/10 border border-green-500/30">
+            <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-slate-100 uppercase tracking-wider">
+              Request Submitted
+            </h2>
+            <p className="text-xs text-slate-400 leading-relaxed font-sans px-4">
+              Your registration request has been successfully received and is currently **Pending Approval**. 
+              An administrator must review and accept your account request before you can log in.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <Link to="/login" className="w-full inline-block">
+              <Button variant="primary" fullWidth>
+                Back to Login
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </AuthLayout>
+    );
+  }
+
   return (
     <AuthLayout>
       <form onSubmit={handleSubmit} className="space-y-5">
         <h2 className="text-xl font-bold text-slate-100 uppercase tracking-wider text-center">
-          Account Login
+          Employee Registration
         </h2>
         
         {error && (
@@ -88,6 +122,16 @@ export const Login: React.FC = () => {
           placeholder="••••••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+
+        <Input
+          id="confirmPassword"
+          label="Confirm Password"
+          type="password"
+          placeholder="••••••••••••"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
           required
         />
 
@@ -133,12 +177,12 @@ export const Login: React.FC = () => {
         </div>
 
         <Button type="submit" variant="primary" fullWidth loading={loading}>
-          Log In
+          Register Account
         </Button>
 
         <div className="text-center pt-2">
-          <Link to="/register" className="text-xs font-semibold text-slate-400 hover:text-primary-400 transition-colors">
-            Don't have an account? Register
+          <Link to="/login" className="text-xs font-semibold text-slate-400 hover:text-primary-400 transition-colors">
+            Already have an account? Log In
           </Link>
         </div>
       </form>

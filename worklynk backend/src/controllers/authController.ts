@@ -77,6 +77,81 @@ export const register = async (req: AuthenticatedRequest, res: Response) => {
   }
 };
 
+export const registerSelf = async (req: Request, res: Response) => {
+  const { email, password, captchaText, captchaKey } = req.body;
+
+  try {
+    if (!email || !password || !captchaText || !captchaKey) {
+      return res.status(400).json({ message: 'All fields (email, password, verification code) are required.' });
+    }
+
+    // CAPTCHA verification
+    try {
+      const decoded = Buffer.from(captchaKey, 'base64').toString('utf-8');
+      const [expectedText, expiresStr, signature] = decoded.split('.');
+      const expires = parseInt(expiresStr, 10);
+      
+      if (Date.now() > expires) {
+        return res.status(400).json({ message: 'CAPTCHA has expired. Please refresh and try again.' });
+      }
+      
+      const secret = process.env.JWT_SECRET || 'worklynk-fallback-secret';
+      const expectedData = `${expectedText}.${expires}`;
+      const expectedSignature = crypto.createHmac('sha256', secret).update(expectedData).digest('hex');
+      
+      if (expectedSignature !== signature || captchaText.toUpperCase() !== expectedText.toUpperCase()) {
+        return res.status(400).json({ message: 'Invalid CAPTCHA code. Please try again.' });
+      }
+    } catch (e) {
+      return res.status(400).json({ message: 'CAPTCHA verification failed.' });
+    }
+
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: 'A user with this email already exists.' });
+    }
+
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message: 'Password must be at least 12 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const newUser = await User.create({
+      email,
+      passwordHash,
+      role: 'employee',
+      isActive: false,
+      approvalStatus: 'pending'
+    });
+
+    const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+    
+    await AuditLog.create({
+      userId: newUser._id,
+      actionType: 'USER_SELF_REGISTRATION',
+      targetResource: `user:${newUser._id}`,
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'] || 'unknown',
+      metadata: { registeredEmail: email }
+    });
+
+    return res.status(201).json({
+      message: 'Registration request submitted successfully. An administrator must approve your account before you can log in.',
+      user: {
+        id: newUser._id,
+        email: newUser.email,
+        role: newUser.role,
+        approvalStatus: newUser.approvalStatus
+      }
+    });
+  } catch (error: any) {
+    console.error('Error during self registration:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+};
+
 export const login = async (req: AuthenticatedRequest, res: Response) => {
   const { email, password, captchaText, captchaKey } = req.body;
   const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
@@ -130,6 +205,13 @@ export const login = async (req: AuthenticatedRequest, res: Response) => {
           message: `Account is temporarily locked due to multiple failed login attempts. Please try again in ${minutesLeft} minutes.`
         });
       }
+    }
+
+    if (user.approvalStatus === 'pending') {
+      return res.status(401).json({ message: 'Your registration request is pending administrator approval.' });
+    }
+    if (user.approvalStatus === 'rejected') {
+      return res.status(401).json({ message: 'Your registration request has been rejected.' });
     }
 
     if (!user.isActive) {

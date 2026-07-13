@@ -237,3 +237,45 @@ export const getSystemStats = async (req: AuthenticatedRequest, res: Response) =
     return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
+
+export const reviewUserRegistration = async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+
+  if (!status || !['approved', 'rejected'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid approval status value. Must be approved or rejected.' });
+  }
+
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    if (user.approvalStatus !== 'pending') {
+      return res.status(400).json({ message: 'This user is not pending approval.' });
+    }
+
+    user.approvalStatus = status;
+    user.isActive = (status === 'approved');
+    await user.save();
+
+    await AuditLog.create({
+      userId: req.user!._id,
+      actionType: 'ADMIN_USER_APPROVAL_DECISION',
+      targetResource: `user:${id}`,
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'] || 'unknown',
+      metadata: { targetApprovalStatus: status }
+    });
+
+    return res.status(200).json({
+      message: `User registration has been successfully ${status}.`,
+      user: { id: user._id, email: user.email, approvalStatus: user.approvalStatus, isActive: user.isActive }
+    });
+  } catch (error: any) {
+    console.error('Error reviewing user registration:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+};

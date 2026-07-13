@@ -17,6 +17,7 @@ import { AdminUserManagement } from './pages/AdminUserManagement';
 import { AuditLogs } from './pages/AuditLogs';
 import { Forbidden } from './pages/Forbidden';
 import { NotFound } from './pages/NotFound';
+import { Register } from './pages/Register';
 
 // Route protection for authenticated users
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -92,6 +93,14 @@ export const App: React.FC = () => {
           element={
             <GuestRoute>
               <Login />
+            </GuestRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <GuestRoute>
+              <Register />
             </GuestRoute>
           }
         />

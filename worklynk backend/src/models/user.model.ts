@@ -24,6 +24,7 @@ export interface IUser extends Document {
   department: string | null;
   consentToken: string | null;
   consentTokenExpires: Date | null;
+  approvalStatus: 'pending' | 'approved' | 'rejected';
   createdAt: Date;
   updatedAt: Date;
   isLocked: boolean;
@@ -123,6 +124,11 @@ const UserSchema = new Schema<IUser>({
   consentTokenExpires: {
     type: Date,
     default: null
+  },
+  approvalStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'approved'
   }
 }, {
   timestamps: true,
