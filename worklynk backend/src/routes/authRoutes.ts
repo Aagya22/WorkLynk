@@ -26,7 +26,7 @@ router.post('/register-self', registerSelf);
 router.post('/login', authLimiter, login);
 router.post('/mfa/verify', mfaSetupLimiter, verifyMFA);
 router.post('/refresh', refresh);
-router.post('/force-change-password', forceChangePassword);
+router.post('/force-change-password', authLimiter, forceChangePassword);
 router.post('/forgot-password', passwordResetLimiter, forgotPassword);
 router.post('/reset-password', passwordResetLimiter, resetPassword);
 

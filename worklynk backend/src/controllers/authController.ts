@@ -20,11 +20,13 @@ import { sendSecurityAlertEmail } from '../utils/email';
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+[\]{};':",./<>?~`|\\-]).{12,}$/;
 
+const isValidString = (value: unknown): value is string => typeof value === 'string';
+
 export const register = async (req: AuthenticatedRequest, res: Response) => {
   const { email, password, role } = req.body;
 
   try {
-    if (!email || !password || !role) {
+    if (!isValidString(email) || !isValidString(password) || !isValidString(role)) {
       return res.status(400).json({ message: 'All fields (email, password, role) are required.' });
     }
 
@@ -82,7 +84,7 @@ export const registerSelf = async (req: Request, res: Response) => {
   const { email, password, captchaText, captchaKey } = req.body;
 
   try {
-    if (!email || !password || !captchaText || !captchaKey) {
+    if (!isValidString(email) || !isValidString(password) || !isValidString(captchaText) || !isValidString(captchaKey)) {
       return res.status(400).json({ message: 'All fields (email, password, verification code) are required.' });
     }
 
@@ -197,12 +199,12 @@ export const login = async (req: AuthenticatedRequest, res: Response) => {
       }
     }
 
-    if (!email || !password) {
+    if (!isValidString(email) || !isValidString(password)) {
       return res.status(400).json({ message: 'Email and password are required.' });
     }
 
     const user = await User.findOne({ email });
-    
+
     if (!user) {
       await bcrypt.compare(password, '$2b$12$DummyHashToPreventTimingEnumerationAttacksSecure123');
       return res.status(401).json({ message: 'Invalid email or password.' });
@@ -628,7 +630,7 @@ export const changePassword = async (req: AuthenticatedRequest, res: Response) =
   const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
 
   try {
-    if (!currentPassword || !newPassword) {
+    if (!isValidString(currentPassword) || !isValidString(newPassword)) {
       return res.status(400).json({ message: 'Current password and new password are required.' });
     }
 
@@ -688,7 +690,7 @@ export const forceChangePassword = async (req: AuthenticatedRequest, res: Respon
   const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
 
   try {
-    if (!email || !currentPassword || !newPassword) {
+    if (!isValidString(email) || !isValidString(currentPassword) || !isValidString(newPassword)) {
       return res.status(400).json({ message: 'All fields (email, currentPassword, newPassword) are required.' });
     }
 
@@ -697,10 +699,17 @@ export const forceChangePassword = async (req: AuthenticatedRequest, res: Respon
       return res.status(401).json({ message: 'Invalid credentials or user does not exist.' });
     }
 
+    if (user.isLocked) {
+      return res.status(401).json({ message: 'Account is temporarily locked due to multiple failed attempts. Please try again later.' });
+    }
+
     const isMatch = await user.matchPassword(currentPassword);
     if (!isMatch) {
+      await user.incrementLoginAttempts();
       return res.status(401).json({ message: 'Incorrect current password.' });
     }
+
+    await user.resetLoginAttempts();
 
     if (!user.isPasswordExpired()) {
       return res.status(400).json({ message: 'Force password reset is only permitted for expired passwords.' });
@@ -840,7 +849,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
   const { email, captchaText, captchaKey } = req.body;
 
   try {
-    if (!email || !captchaText || !captchaKey) {
+    if (!isValidString(email) || !isValidString(captchaText) || !isValidString(captchaKey)) {
       return res.status(400).json({ message: 'All fields (email, verification code) are required.' });
     }
 
@@ -910,7 +919,7 @@ export const resetPassword = async (req: Request, res: Response) => {
   const { token, password } = req.body;
 
   try {
-    if (!token || !password) {
+    if (!isValidString(token) || !isValidString(password)) {
       return res.status(400).json({ message: 'Reset token and new password are required.' });
     }
 
