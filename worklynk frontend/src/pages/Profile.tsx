@@ -4,6 +4,7 @@ import api from '../utils/api';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
+import { UserCog } from 'lucide-react';
 
 interface ProfileData {
   fullName: string;
@@ -25,6 +26,15 @@ export const Profile: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Onboarding (self-service profile setup) state
+  const [profileMissing, setProfileMissing] = useState(false);
+  const [obFullName, setObFullName] = useState('');
+  const [obDob, setObDob] = useState('');
+  const [obPhone, setObPhone] = useState('');
+  const [obEmergency, setObEmergency] = useState('');
+  const [obSubmitting, setObSubmitting] = useState(false);
+  const [obError, setObError] = useState('');
 
   // Editable fields states
   const [fullName, setFullName] = useState('');
@@ -55,14 +65,53 @@ export const Profile: React.FC = () => {
       if (response.data?.profile) {
         const p = response.data.profile;
         setProfile(p);
+        setProfileMissing(false);
         setFullName(p.fullName || '');
         setPhoneNumber(p.phoneNumber || '');
         setEmergencyContact(p.emergencyContact || '');
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load profile details.');
+      if (err.response?.status === 404) {
+        // No profile yet (typical for self-registered accounts) — offer onboarding.
+        setProfileMissing(true);
+      } else {
+        setError(err.response?.data?.message || 'Failed to load profile details.');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInitProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setObError('');
+
+    if (!obFullName || !obDob || !obPhone || !obEmergency) {
+      setObError('All fields are required to set up your profile.');
+      return;
+    }
+
+    setObSubmitting(true);
+    try {
+      const response = await api.post('/api/profile/self', {
+        fullName: obFullName,
+        dateOfBirth: obDob,
+        phoneNumber: obPhone,
+        emergencyContact: obEmergency,
+      });
+      if (response.data?.profile) {
+        const p = response.data.profile;
+        setProfile(p);
+        setProfileMissing(false);
+        setFullName(p.fullName || '');
+        setPhoneNumber(p.phoneNumber || '');
+        setEmergencyContact(p.emergencyContact || '');
+      }
+    } catch (err: any) {
+      setObError(err.response?.data?.message || 'Failed to set up your profile.');
+    } finally {
+      setObSubmitting(false);
     }
   };
 
@@ -235,12 +284,17 @@ export const Profile: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">Profile Details</h1>
-          <p className="text-sm text-slate-400 font-medium">
-            Manage your personal contact information and upload your profile photo.
-          </p>
+      <div className="space-y-7">
+        <div className="animate-slide-up flex items-center gap-4">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-accent-500/20 bg-accent-500/10 text-accent-400 shadow-glow">
+            <UserCog size={22} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">Profile Details</h1>
+            <p className="text-sm font-medium text-slate-400">
+              Manage your contact information, security, and profile photo.
+            </p>
+          </div>
         </div>
 
         {loading ? (
@@ -253,6 +307,77 @@ export const Profile: React.FC = () => {
               <span>Fetching profile attributes...</span>
             </div>
           </div>
+        ) : profileMissing ? (
+          <div className="animate-slide-up mx-auto max-w-2xl rounded-2xl border border-white/[0.08] bg-[#0D1326] p-7 shadow-xl">
+            <div className="mb-5 flex items-start gap-4 border-b border-white/[0.06] pb-5">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-accent-500/20 bg-accent-500/10 text-accent-400">
+                <UserCog size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-100">Finish setting up your profile</h3>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  Welcome! Add your details below to activate your profile. Your job title, salary, and
+                  bank details will be assigned by HR.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleInitProfile} className="space-y-5">
+              {obError && (
+                <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center text-xs font-semibold text-red-400">
+                  {obError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <Input
+                  id="ob-full-name"
+                  label="Full Name"
+                  type="text"
+                  placeholder="e.g. Aagya Sharma"
+                  value={obFullName}
+                  onChange={(e) => setObFullName(e.target.value)}
+                  required
+                  disabled={obSubmitting}
+                />
+                <Input
+                  id="ob-dob"
+                  label="Date of Birth"
+                  type="date"
+                  value={obDob}
+                  onChange={(e) => setObDob(e.target.value)}
+                  required
+                  disabled={obSubmitting}
+                />
+                <Input
+                  id="ob-phone"
+                  label="Phone Number"
+                  type="tel"
+                  placeholder="+44 7700 900000"
+                  value={obPhone}
+                  onChange={(e) => setObPhone(e.target.value)}
+                  required
+                  disabled={obSubmitting}
+                />
+                <Input
+                  id="ob-emergency"
+                  label="Emergency Contact"
+                  type="text"
+                  placeholder="Name, Relationship, Phone"
+                  value={obEmergency}
+                  onChange={(e) => setObEmergency(e.target.value)}
+                  required
+                  disabled={obSubmitting}
+                />
+              </div>
+
+              <div className="flex justify-end border-t border-white/[0.06] pt-4">
+                <Button type="submit" variant="primary" loading={obSubmitting}>
+                  Complete Setup
+                </Button>
+              </div>
+            </form>
+          </div>
         ) : !profile ? (
           <div className="p-6 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-semibold rounded-xl text-center">
             {error || 'No profile records found. Please contact an HR administrator to initialize your profile.'}
@@ -262,7 +387,7 @@ export const Profile: React.FC = () => {
             {/* Left Column: Photo Upload and MFA */}
             <div className="space-y-6">
               {/* Photo Upload Card */}
-              <div className="glassmorphism rounded-2xl p-6 border border-white/5 flex flex-col items-center text-center space-y-4">
+              <div className="animate-slide-up stagger-1 flex flex-col items-center space-y-4 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 text-center shadow-xl">
                 <div className="relative group">
                   <div className="w-32 h-32 rounded-full border border-slate-800 bg-slate-900 overflow-hidden flex items-center justify-center relative shadow-2xl">
                     {previewUrl ? (
@@ -351,7 +476,7 @@ export const Profile: React.FC = () => {
               </div>
 
               {/* MFA Card */}
-              <div className="glassmorphism rounded-2xl p-6 border border-white/5 space-y-4">
+              <div className="animate-slide-up stagger-2 space-y-4 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-primary-500/10 border border-primary-500/20 rounded-lg text-primary-400">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -453,7 +578,7 @@ export const Profile: React.FC = () => {
 
             {/* Right Column: Edit Profile Form */}
             <div className="lg:col-span-2 space-y-6">
-              <div className="glassmorphism rounded-2xl p-6 border border-white/5">
+              <div className="animate-slide-up stagger-3 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl">
                 <form onSubmit={handleUpdateProfile} className="space-y-6">
                   <h3 className="text-lg font-bold text-slate-200 border-b border-slate-900 pb-3 uppercase tracking-wider">
                     Contact & Personal Information
@@ -540,11 +665,11 @@ export const Profile: React.FC = () => {
                     />
                   </div>
 
-                  {/* Restrict showing sensitive salary/bank info on standard profile screen to hr/admin roles only */}
-                  {(user?.role === 'hr_manager' || user?.role === 'admin') && (profile.salary || profile.bankAccount) && (
+                  {/* Compensation is returned by the API only for the profile owner and HR/admin. */}
+                  {(profile.salary || profile.bankAccount) && (
                     <div className="pt-6 border-t border-slate-900 space-y-5">
                       <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wider">
-                        HR Administration Fields
+                        Compensation &amp; Banking
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="flex flex-col space-y-1.5">

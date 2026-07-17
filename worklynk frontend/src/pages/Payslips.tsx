@@ -4,6 +4,7 @@ import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Table } from '../components/Table';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
+import { FileText, Wallet, CalendarClock } from 'lucide-react';
 
 interface Payslip {
   _id: string;
@@ -115,15 +116,58 @@ export const Payslips: React.FC = () => {
     }
   ];
 
+  const latest = payslips[0];
+  const latestLabel = latest
+    ? (() => {
+        const [year, month] = latest.month.split('-');
+        return new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('default', { month: 'long', year: 'numeric' });
+      })()
+    : null;
+
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">My Payslips</h1>
-          <p className="text-sm text-slate-400 font-medium">
-            View your salary statements, earnings, deductions history, and export secure PDF files.
-          </p>
+      <div className="space-y-7">
+        <div className="animate-slide-up flex items-center gap-4">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-green-500/20 bg-green-500/10 text-green-400 shadow-glow">
+            <FileText size={22} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">My Payslips</h1>
+            <p className="text-sm font-medium text-slate-400">
+              View earnings, deductions history, and export secure PDF statements.
+            </p>
+          </div>
         </div>
+
+        {!loading && !error && latest && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="animate-slide-up stagger-1 group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D1326] p-5 transition-all duration-300 hover:-translate-y-1 sm:col-span-2">
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-[#22C55E]" />
+              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-[#22C55E]/20 to-transparent opacity-70 blur-2xl" />
+              <div className="relative flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Latest Net Pay · {latestLabel}</span>
+                  <p className="mt-1.5 text-[38px] font-extrabold leading-none tracking-tight text-green-400">
+                    Rs. {parseFloat(latest.netSalary).toFixed(2)}
+                  </p>
+                </div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-green-500/10 text-green-400">
+                  <Wallet size={20} />
+                </div>
+              </div>
+            </div>
+            <div className="animate-slide-up stagger-2 group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D1326] p-5 transition-all duration-300 hover:-translate-y-1">
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-[#4F8CFF]" />
+              <div className="flex items-center justify-between">
+                <span className="text-[38px] font-extrabold leading-none tracking-tight text-[#F8FAFC]">{payslips.length}</span>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-accent-500/10 text-accent-400">
+                  <CalendarClock size={20} />
+                </div>
+              </div>
+              <span className="mt-2 block text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">Statements Issued</span>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="py-20 flex justify-center items-center">
@@ -140,15 +184,19 @@ export const Payslips: React.FC = () => {
             {error}
           </div>
         ) : payslips.length === 0 ? (
-          <div className="glassmorphism rounded-2xl p-12 border border-white/5 text-center space-y-3">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-slate-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <p className="text-slate-400 font-semibold text-sm">No payslips found in your records.</p>
-            <p className="text-xs text-slate-500">Your monthly statements will appear here once finalized by HR.</p>
+          <div className="animate-fade-in flex flex-col items-center space-y-4 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-14 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-green-500/20 bg-green-500/10 text-green-400">
+              <FileText size={28} />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-slate-200">No payslips yet</p>
+              <p className="mx-auto max-w-sm text-xs text-slate-500">
+                Your monthly statements will appear here once finalized by HR.
+              </p>
+            </div>
           </div>
         ) : (
-          <div className="glassmorphism rounded-2xl border border-white/5 overflow-hidden">
+          <div className="animate-slide-up stagger-3 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D1326] shadow-xl">
             <Table data={payslips} columns={columns} />
           </div>
         )}

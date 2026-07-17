@@ -5,6 +5,7 @@ import { Table } from '../components/Table';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { Input } from '../components/Input';
+import { Plus, CalendarDays, Clock3, CheckCircle2, XCircle } from 'lucide-react';
 
 interface LeaveRequest {
   _id: string;
@@ -184,22 +185,63 @@ export const Leaves: React.FC = () => {
     }
   ];
 
+  const summary = [
+    { label: 'Total Requests', value: leaves.length, icon: CalendarDays, color: '#4F8CFF' },
+    { label: 'Pending', value: leaves.filter((l) => l.status === 'pending').length, icon: Clock3, color: '#F59E0B' },
+    { label: 'Approved', value: leaves.filter((l) => l.status === 'approved').length, icon: CheckCircle2, color: '#22C55E' },
+    { label: 'Rejected', value: leaves.filter((l) => l.status === 'rejected').length, icon: XCircle, color: '#EF4444' },
+  ];
+
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">Leave Requests</h1>
-            <p className="text-sm text-slate-400 font-medium">
-              Submit new leave requests, monitor approvals status, and check your vacation balance.
-            </p>
+      <div className="space-y-7">
+        <div className="animate-slide-up flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-accent-500/20 bg-accent-500/10 text-accent-400 shadow-glow">
+              <CalendarDays size={22} />
+            </div>
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">Leave Requests</h1>
+              <p className="text-sm font-medium text-slate-400">
+                Submit requests, track approvals, and keep an eye on your balance.
+              </p>
+            </div>
           </div>
-          <div>
-            <Button variant="primary" onClick={() => setIsRequestModalOpen(true)}>
+          <Button variant="primary" onClick={() => setIsRequestModalOpen(true)}>
+            <span className="flex items-center gap-2">
+              <Plus size={16} />
               Request Leave
-            </Button>
-          </div>
+            </span>
+          </Button>
         </div>
+
+        {!loading && !error && (
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {summary.map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <div
+                  key={s.label}
+                  className={`animate-slide-up stagger-${i + 1} group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D1326] p-4 transition-all duration-300 hover:-translate-y-1`}
+                >
+                  <div className="absolute inset-x-0 top-0 h-[3px]" style={{ background: s.color }} />
+                  <div className="flex items-center justify-between">
+                    <span className="text-3xl font-extrabold tracking-tight text-[#F8FAFC]">{s.value}</span>
+                    <div
+                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 transition-transform duration-300 group-hover:scale-110"
+                      style={{ background: `${s.color}1A`, color: s.color }}
+                    >
+                      <Icon size={17} />
+                    </div>
+                  </div>
+                  <span className="mt-1 block text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                    {s.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {loading ? (
           <div className="py-20 flex justify-center items-center">
@@ -216,15 +258,25 @@ export const Leaves: React.FC = () => {
             {error}
           </div>
         ) : leaves.length === 0 ? (
-          <div className="glassmorphism rounded-2xl p-12 border border-white/5 text-center space-y-3">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-slate-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <p className="text-slate-400 font-semibold text-sm">No leave requests found.</p>
-            <p className="text-xs text-slate-500">Need some rest? Click the "Request Leave" button above to submit a new application.</p>
+          <div className="animate-fade-in flex flex-col items-center space-y-4 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-14 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-accent-500/20 bg-accent-500/10 text-accent-400">
+              <CalendarDays size={28} />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-slate-200">No leave requests yet</p>
+              <p className="mx-auto max-w-sm text-xs text-slate-500">
+                Need some rest? Submit your first application and track its approval right here.
+              </p>
+            </div>
+            <Button variant="primary" onClick={() => setIsRequestModalOpen(true)}>
+              <span className="flex items-center gap-2">
+                <Plus size={16} />
+                Request Leave
+              </span>
+            </Button>
           </div>
         ) : (
-          <div className="glassmorphism rounded-2xl border border-white/5 overflow-hidden">
+          <div className="animate-slide-up stagger-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D1326] shadow-xl">
             <Table data={leaves} columns={columns} />
           </div>
         )}
@@ -282,6 +334,7 @@ export const Leaves: React.FC = () => {
               >
                 <option value="annual" className="bg-slate-950 text-slate-200">Annual Leave (Vacation)</option>
                 <option value="sick" className="bg-slate-950 text-slate-200">Sick Leave</option>
+                <option value="emergency" className="bg-slate-950 text-slate-200">Emergency Leave</option>
                 <option value="unpaid" className="bg-slate-950 text-slate-200">Unpaid Leave</option>
               </select>
             </div>

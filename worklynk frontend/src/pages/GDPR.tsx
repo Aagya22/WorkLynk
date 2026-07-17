@@ -4,6 +4,7 @@ import api from '../utils/api';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
+import { ShieldCheck } from 'lucide-react';
 
 export const GDPR: React.FC = () => {
   const { user } = useAuth();
@@ -99,12 +100,17 @@ export const GDPR: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">GDPR Compliance Portal</h1>
-          <p className="text-sm text-slate-400 font-medium">
-            Manage your right to data portability. Request full data archives or authorize an administrator.
-          </p>
+      <div className="space-y-7">
+        <div className="animate-slide-up flex items-center gap-4">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-indigo-500/20 bg-indigo-500/10 text-indigo-400 shadow-glow">
+            <ShieldCheck size={22} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">GDPR Compliance Portal</h1>
+            <p className="text-sm font-medium text-slate-400">
+              Manage your right to data portability — export your archive or authorize an administrator.
+            </p>
+          </div>
         </div>
 
         {error && (
@@ -119,9 +125,9 @@ export const GDPR: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Card 1: Data Portability (Export) */}
-          <div className="glassmorphism rounded-2xl p-6 border border-white/5 flex flex-col justify-between space-y-6">
+          <div className="animate-slide-up stagger-1 flex flex-col justify-between space-y-6 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl transition-all duration-300 hover:border-white/15">
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
                 <div className="p-2.5 bg-blue-500/10 rounded-xl border border-blue-500/20 text-blue-400">
@@ -151,7 +157,7 @@ export const GDPR: React.FC = () => {
           </div>
 
           {/* Card 2: Admin Consent Authorization */}
-          <div className="glassmorphism rounded-2xl p-6 border border-white/5 flex flex-col justify-between space-y-6">
+          <div className="animate-slide-up stagger-2 flex flex-col justify-between space-y-6 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl transition-all duration-300 hover:border-white/15">
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
                 <div className="p-2.5 bg-amber-500/10 rounded-xl border border-amber-500/20 text-amber-400">

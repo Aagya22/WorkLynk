@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   createProfile,
+  initializeMyProfile,
   getProfile,
   updateProfile,
   uploadProfilePhoto,
@@ -13,6 +14,7 @@ import { upload, validateMagicBytes } from '../middlewares/uploadMiddleware';
 const router = Router();
 
 router.post('/', protect, restrictTo('admin', 'hr_manager'), createProfile);
+router.post('/self', protect, initializeMyProfile);
 router.get('/:userId', protect, getProfile);
 router.put('/:userId', protect, updateProfile);
 router.post(

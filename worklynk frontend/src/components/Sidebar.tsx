@@ -180,12 +180,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
           )}
 
-          {item.name === 'Leave Requests' && !isCollapsed && (
-            <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded">
-              3
-            </span>
-          )}
-
           {isCollapsed && (
             <div className="absolute left-[84px] px-2.5 py-1.5 bg-[#0B1226] border border-[#1B2234] text-[11px] font-bold uppercase tracking-wider text-slate-200 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50 whitespace-nowrap shadow-xl">
               {item.name}

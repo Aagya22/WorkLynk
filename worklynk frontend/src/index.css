@@ -17,10 +17,31 @@
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #a7b8cf 0%, #5c78a0 100%);
+  background: linear-gradient(120deg, #6EA8FF 0%, #A78BFA 55%, #F0ABFC 100%);
+  background-size: 200% auto;
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
+  animation: gradient-pan 6s ease infinite;
 }
+
+@keyframes gradient-pan {
+  0%, 100% { background-position: 0% center; }
+  50% { background-position: 100% center; }
+}
+
+/* Subtle dotted grid texture for panels/heroes */
+.grid-texture {
+  background-image: radial-gradient(rgba(148, 163, 184, 0.09) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Animation stagger helpers */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.12s; }
+.stagger-3 { animation-delay: 0.19s; }
+.stagger-4 { animation-delay: 0.26s; }
+.stagger-5 { animation-delay: 0.33s; }
 
 /* Global premium dark scrollbar styling */
 ::-webkit-scrollbar {

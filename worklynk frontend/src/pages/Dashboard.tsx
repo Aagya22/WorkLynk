@@ -4,6 +4,40 @@ import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { StatCard } from '../components/StatCard';
+import {
+  CalendarDays,
+  FileText,
+  UserCog,
+  Download,
+  ArrowUpRight,
+  ShieldCheck,
+  Fingerprint,
+  Lock,
+  Clock3,
+  CheckCircle2,
+  Wallet,
+  Sparkles,
+} from 'lucide-react';
+
+const greeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 18) return 'Good afternoon';
+  return 'Good evening';
+};
+
+const quickActions = [
+  { to: '/leaves', label: 'Leave Request', desc: 'Book time off', icon: CalendarDays, color: '#4F8CFF' },
+  { to: '/payslips', label: 'View Payslips', desc: 'Download PDFs', icon: FileText, color: '#22C55E' },
+  { to: '/profile', label: 'Manage Profile', desc: 'Update details', icon: UserCog, color: '#818CF8' },
+  { to: '/gdpr', label: 'GDPR Export', desc: 'Export your data', icon: Download, color: '#F59E0B' },
+];
+
+const securityItems = [
+  { label: 'Field-Level Encryption', value: 'AES-256-GCM', icon: Lock, tone: 'text-green-400' },
+  { label: 'Session Isolation', value: 'IP-Bound Cookies', icon: ShieldCheck, tone: 'text-green-400' },
+  { label: 'Multi-Factor Auth', value: 'Active (TOTP)', icon: Fingerprint, tone: 'text-accent-400' },
+];
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -18,15 +52,15 @@ export const Dashboard: React.FC = () => {
       }
     }
   }, [user, navigate]);
-  
+
   const [stats, setStats] = useState({
     totalLeaves: 0,
     approvedLeaves: 0,
     pendingLeaves: 0,
     latestPayslipMonth: 'N/A',
-    latestPayslipNet: 'N/A'
+    latestPayslipNet: 'N/A',
   });
-  
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,15 +68,13 @@ export const Dashboard: React.FC = () => {
       try {
         const [leavesRes, payslipsRes] = await Promise.all([
           api.get('/api/leaves/me?limit=5'),
-          api.get('/api/payslips?limit=1')
+          api.get('/api/payslips?limit=1'),
         ]);
-        
-        // Calculate leave metrics
+
         const leaves = leavesRes.data.leaves || [];
         const approved = leaves.filter((l: any) => l.status === 'approved').length;
         const pending = leaves.filter((l: any) => l.status === 'pending').length;
-        
-        // Latest payslip info
+
         const payslips = payslipsRes.data.payslips || [];
         const latestMonth = payslips[0]?.month || 'N/A';
         const latestNet = payslips[0]?.netSalary ? `Rs. ${payslips[0].netSalary}` : 'N/A';
@@ -52,7 +84,7 @@ export const Dashboard: React.FC = () => {
           approvedLeaves: approved,
           pendingLeaves: pending,
           latestPayslipMonth: latestMonth,
-          latestPayslipNet: latestNet
+          latestPayslipNet: latestNet,
         });
       } catch (err) {
         console.error('Error fetching dashboard summary:', err);
@@ -60,153 +92,162 @@ export const Dashboard: React.FC = () => {
         setLoading(false);
       }
     };
-    
+
     fetchDashboardData();
   }, []);
 
+  const name = user?.email.split('@')[0] || 'there';
+  const today = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        {/* Welcome Header Section */}
-        <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
-          <div>
-            <h1 className="text-[36px] font-extrabold tracking-tight text-[#F8FAFC]">
-              Welcome back, <span className="gradient-text">{user?.email.split('@')[0]}</span>
-            </h1>
-            <p className="text-[14px] text-[#94A3B8] font-medium font-sans mt-0.5">
-              Here is your account overview and quick security stats for today.
-            </p>
-          </div>
-          <div className="flex items-center space-x-2.5 text-xs bg-[#4F8CFF]/10 border border-[#4F8CFF]/20 px-3.5 py-2 rounded-xl text-[#4F8CFF] font-bold uppercase tracking-wider h-fit">
-            <span className="h-2 w-2 rounded-full bg-[#4F8CFF] animate-pulse"></span>
-            <span>All systems secure</span>
+      <div className="space-y-7">
+        {/* Hero banner */}
+        <div className="animate-slide-up relative overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-br from-[#0D1326] via-[#0B1020] to-[#0A0E1C] p-7 shadow-xl">
+          <div className="grid-texture pointer-events-none absolute inset-0 opacity-70" />
+          <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-accent-500/20 blur-[90px]" />
+          <div className="pointer-events-none absolute -bottom-24 right-24 h-56 w-56 rounded-full bg-indigo-500/10 blur-[90px]" />
+
+          <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-5">
+              <div className="relative hidden h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-accent-500/10 text-2xl font-black uppercase text-accent-400 shadow-glow sm:flex">
+                {name.charAt(0)}
+                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#0B1020] bg-green-500">
+                  <CheckCircle2 size={11} className="text-white" />
+                </span>
+              </div>
+              <div>
+                <p className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-400">
+                  <Sparkles size={13} className="text-accent-400" />
+                  {greeting()} · {today}
+                </p>
+                <h1 className="mt-1 text-[34px] font-extrabold leading-tight tracking-tight text-[#F8FAFC]">
+                  Welcome back, <span className="gradient-text">{name}</span>
+                </h1>
+                <p className="mt-1 text-[14px] font-medium text-[#94A3B8]">
+                  Here's your account overview and security posture for today.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 self-start rounded-2xl border border-green-500/20 bg-green-500/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-green-400">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-pulse-ring absolute inline-flex h-full w-full rounded-full bg-green-400" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-400" />
+              </span>
+              All systems secure
+            </div>
           </div>
         </div>
 
         {loading ? (
-          <div className="py-20 flex justify-center items-center">
-            <div className="flex items-center space-x-3 text-slate-400 font-semibold text-sm">
-              <svg className="animate-spin h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <div className="flex items-center justify-center py-24">
+            <div className="flex items-center space-x-3 text-sm font-semibold text-slate-400">
+              <svg className="h-5 w-5 animate-spin text-accent-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <span>Fetching dashboard telemetry...</span>
+              <span>Fetching your dashboard…</span>
             </div>
           </div>
         ) : (
           <>
-            {/* Stats Summary cards row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatCard
-                title="Pending Leaves"
-                value={stats.pendingLeaves}
-                variant="amber"
-                description="Awaiting review by manager"
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                }
-              />
-              <StatCard
-                title="Approved Leaves"
-                value={stats.approvedLeaves}
-                variant="green"
-                description="Booked time off this year"
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                }
-              />
-              <StatCard
-                title={`Payslip (${stats.latestPayslipMonth})`}
-                value={stats.latestPayslipNet}
-                variant="blue"
-                description="Net payout for latest cycle"
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 8h6m-6 2h6m2 6H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                }
-              />
+            {/* Stats */}
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+              <div className="animate-slide-up stagger-1">
+                <StatCard
+                  title="Pending Leaves"
+                  value={stats.pendingLeaves}
+                  variant="amber"
+                  description="Awaiting manager review"
+                  icon={<Clock3 size={20} />}
+                />
+              </div>
+              <div className="animate-slide-up stagger-2">
+                <StatCard
+                  title="Approved Leaves"
+                  value={stats.approvedLeaves}
+                  variant="green"
+                  description="Booked time off this year"
+                  icon={<CheckCircle2 size={20} />}
+                />
+              </div>
+              <div className="animate-slide-up stagger-3">
+                <StatCard
+                  title={`Latest Payslip (${stats.latestPayslipMonth})`}
+                  value={stats.latestPayslipNet}
+                  variant="blue"
+                  description="Net payout for latest cycle"
+                  icon={<Wallet size={20} />}
+                />
+              </div>
             </div>
 
-            {/* Quick Actions and System status Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              <div className="bg-[#0D1326] border border-white/[0.08] rounded-2xl p-6 space-y-4 shadow-xl">
-                <h3 className="text-base font-bold text-slate-200 uppercase tracking-wider border-b border-white/[0.08] pb-3.5">
-                  Quick Actions
-                </h3>
-                <div className="grid grid-cols-2 gap-3.5">
-                  <Link
-                    to="/leaves"
-                    className="flex flex-col items-center justify-center p-5 rounded-xl border border-white/[0.05] bg-[#070B18]/50 hover:bg-[#4F8CFF]/10 hover:border-[#4F8CFF]/30 transition-all duration-200 group text-slate-300 hover:text-white"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#4F8CFF] group-hover:scale-110 transition-transform mb-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span className="text-xs font-bold">Leave Request</span>
-                  </Link>
-
-                  <Link
-                    to="/payslips"
-                    className="flex flex-col items-center justify-center p-5 rounded-xl border border-white/[0.05] bg-[#070B18]/50 hover:bg-[#4F8CFF]/10 hover:border-[#4F8CFF]/30 transition-all duration-200 group text-slate-300 hover:text-white"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#4F8CFF] group-hover:scale-110 transition-transform mb-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span className="text-xs font-bold">View Payslips</span>
-                  </Link>
-
-                  <Link
-                    to="/profile"
-                    className="flex flex-col items-center justify-center p-5 rounded-xl border border-white/[0.05] bg-[#070B18]/50 hover:bg-[#4F8CFF]/10 hover:border-[#4F8CFF]/30 transition-all duration-200 group text-slate-300 hover:text-white"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#4F8CFF] group-hover:scale-110 transition-transform mb-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <span className="text-xs font-bold">Manage Profile</span>
-                  </Link>
-
-                  <Link
-                    to="/gdpr"
-                    className="flex flex-col items-center justify-center p-5 rounded-xl border border-white/[0.05] bg-[#070B18]/50 hover:bg-[#4F8CFF]/10 hover:border-[#4F8CFF]/30 transition-all duration-200 group text-slate-300 hover:text-white"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#4F8CFF] group-hover:scale-110 transition-transform mb-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    <span className="text-xs font-bold">GDPR Data Export</span>
-                  </Link>
+            {/* Quick actions + security */}
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+              <div className="animate-slide-up stagger-4 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl lg:col-span-3">
+                <div className="mb-5 flex items-center justify-between border-b border-white/[0.06] pb-4">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">Quick Actions</h3>
+                  <span className="text-[11px] font-medium text-slate-500">Jump right in</span>
+                </div>
+                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                  {quickActions.map((a) => {
+                    const Icon = a.icon;
+                    return (
+                      <Link
+                        key={a.to}
+                        to={a.to}
+                        className="group relative flex items-center gap-4 overflow-hidden rounded-xl border border-white/[0.06] bg-[#070B18]/60 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/15 hover:bg-[#111a30]"
+                      >
+                        <div
+                          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-white/10 transition-transform duration-200 group-hover:scale-110"
+                          style={{ background: `${a.color}1A`, color: a.color }}
+                        >
+                          <Icon size={20} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-bold text-slate-200 group-hover:text-white">{a.label}</p>
+                          <p className="text-[11px] font-medium text-slate-500">{a.desc}</p>
+                        </div>
+                        <ArrowUpRight
+                          size={16}
+                          className="flex-shrink-0 text-slate-600 transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-slate-300"
+                        />
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="bg-[#0D1326] border border-white/[0.08] rounded-2xl p-6 space-y-4 shadow-xl">
-                <h3 className="text-base font-bold text-slate-200 uppercase tracking-wider border-b border-white/[0.08] pb-3.5">
-                  Security Log Status
-                </h3>
-                <div className="space-y-4 text-xs font-medium text-slate-400">
-                  <div className="flex justify-between items-center bg-[#070B18]/50 p-3 rounded-xl border border-white/[0.05]">
-                    <span>Field Level Encryption</span>
-                    <span className="text-green-400 font-bold uppercase tracking-wider flex items-center space-x-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-green-400"></span>
-                      <span>AES-256-GCM</span>
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center bg-[#070B18]/50 p-3 rounded-xl border border-white/[0.05]">
-                    <span>Session Isolation</span>
-                    <span className="text-green-400 font-bold uppercase tracking-wider flex items-center space-x-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-green-400"></span>
-                      <span>IP Bound Cookies</span>
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center bg-[#070B18]/50 p-3 rounded-xl border border-white/[0.05]">
-                    <span>Multi-Factor Authentication</span>
-                    <span className="text-blue-400 font-bold uppercase tracking-wider flex items-center space-x-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-blue-400"></span>
-                      <span>Active (TOTP)</span>
-                    </span>
-                  </div>
+              <div className="animate-slide-up stagger-5 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl lg:col-span-2">
+                <div className="mb-5 flex items-center gap-2 border-b border-white/[0.06] pb-4">
+                  <ShieldCheck size={16} className="text-accent-400" />
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">Security Status</h3>
+                </div>
+                <div className="space-y-3">
+                  {securityItems.map((s) => {
+                    const Icon = s.icon;
+                    return (
+                      <div
+                        key={s.label}
+                        className="flex items-center justify-between rounded-xl border border-white/[0.05] bg-[#070B18]/60 p-3.5"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Icon size={15} className="text-slate-500" />
+                          <span className="text-xs font-medium text-slate-400">{s.label}</span>
+                        </div>
+                        <span className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide ${s.tone}`}>
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                          {s.value}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

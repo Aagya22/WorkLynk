@@ -30,6 +30,14 @@ const sanitizeProfileResponse = (profile: any, role: string, isOwner: boolean = 
   return profileObj;
 };
 
+// Soft duplicate check
+const isPhoneNumberTaken = async (phoneNumber: string, excludeUserId?: any): Promise<boolean> => {
+  const query: any = { phoneNumber: sanitizeInput(phoneNumber) };
+  if (excludeUserId) query.userId = { $ne: excludeUserId };
+  const existing = await Profile.findOne(query);
+  return !!existing;
+};
+
 export const createProfile = async (req: AuthenticatedRequest, res: Response) => {
   // Role check
   if (req.user!.role === 'employee') {
@@ -61,6 +69,10 @@ export const createProfile = async (req: AuthenticatedRequest, res: Response) =>
     const existingProfile = await Profile.findOne({ userId });
     if (existingProfile) {
       return res.status(400).json({ message: 'Profile already exists for this user.' });
+    }
+
+    if (await isPhoneNumberTaken(phoneNumber, userId)) {
+      return res.status(400).json({ message: 'This phone number is already in use by another account.' });
     }
 
     // Input sanitization to prevent XSS
@@ -98,6 +110,57 @@ export const createProfile = async (req: AuthenticatedRequest, res: Response) =>
     });
   } catch (error: any) {
     console.error('Error creating profile:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+};
+
+export const initializeMyProfile = async (req: AuthenticatedRequest, res: Response) => {
+  const { fullName, dateOfBirth, phoneNumber, emergencyContact } = req.body;
+  const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+
+  try {
+    if (!fullName || !dateOfBirth || !phoneNumber || !emergencyContact) {
+      return res.status(400).json({ message: 'Full name, date of birth, phone number, and emergency contact are required.' });
+    }
+
+    const existingProfile = await Profile.findOne({ userId: req.user!._id });
+    if (existingProfile) {
+      return res.status(400).json({ message: 'Your profile has already been set up.' });
+    }
+
+    if (await isPhoneNumberTaken(phoneNumber)) {
+      return res.status(400).json({ message: 'This phone number is already in use by another account.' });
+    }
+
+    // Employees provide their own contact details; HR-managed fields start as placeholders.
+    const profile = await Profile.create({
+      userId: req.user!._id,
+      fullName: sanitizeInput(fullName),
+      jobTitle: 'Pending Assignment',
+      dateOfBirth,
+      phoneNumber: sanitizeInput(phoneNumber),
+      emergencyContact: sanitizeInput(emergencyContact),
+      salary: '0',
+      bankAccount: 'Pending Assignment',
+      employmentStartDate: new Date(),
+      profilePhotoPath: null
+    });
+
+    await AuditLog.create({
+      userId: req.user!._id,
+      actionType: 'PROFILE_CREATION',
+      targetResource: `profile:${profile._id}`,
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'] || 'unknown',
+      metadata: { selfInitialized: true }
+    });
+
+    return res.status(201).json({
+      message: 'Profile set up successfully.',
+      profile: sanitizeProfileResponse(profile, req.user!.role, true)
+    });
+  } catch (error: any) {
+    console.error('Error initializing profile:', error);
     return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
@@ -168,6 +231,13 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
         metadata: { targetUserId: userId }
       });
       return res.status(403).json({ message: 'Access denied: You cannot modify this profile.' });
+    }
+
+    // Reject a phone number already registered to a different profile (only when it changes).
+    if (req.body.phoneNumber !== undefined && sanitizeInput(req.body.phoneNumber) !== profile.phoneNumber) {
+      if (await isPhoneNumberTaken(req.body.phoneNumber, profile.userId)) {
+        return res.status(400).json({ message: 'This phone number is already in use by another account.' });
+      }
     }
 
     if (req.user!.role === 'employee') {
