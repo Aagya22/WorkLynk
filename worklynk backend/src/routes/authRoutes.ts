@@ -16,13 +16,13 @@ import {
   resetPassword
 } from '../controllers/authController';
 import { protect, restrictTo } from '../middlewares/authMiddleware';
-import { authLimiter, mfaSetupLimiter, passwordResetLimiter } from '../middlewares/rateLimit';
+import { authLimiter, mfaSetupLimiter, passwordResetLimiter, registrationLimiter } from '../middlewares/rateLimit';
 
 const router = Router();
 
 // Public Routes
 router.get('/captcha', getCaptcha);
-router.post('/register-self', registerSelf);
+router.post('/register-self', registrationLimiter, registerSelf);
 router.post('/login', authLimiter, login);
 router.post('/mfa/verify', mfaSetupLimiter, verifyMFA);
 router.post('/refresh', refresh);

@@ -37,6 +37,17 @@ export const passwordResetLimiter = rateLimit({
   skipSuccessfulRequests: true
 });
 
+// Self-registration limiter: max 5 accounts per hour per IP (counts successes to stop mass sign-ups)
+export const registrationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: process.env.NODE_ENV === 'development' ? 100 : 5,
+  message: {
+    message: 'Too many registration attempts from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // MFA Setup/Verification limiter: max 5 attempts per 15 minutes
 export const mfaSetupLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

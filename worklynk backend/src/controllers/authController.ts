@@ -7,6 +7,7 @@ import qrcode from 'qrcode';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/user.model';
 import { BlacklistedToken } from '../models/blacklist.model';
+import { UsedCaptcha } from '../models/used-captcha.model';
 import { AuditLog } from '../models/audit-log.model';
 import { Notification } from '../models/notification.model';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
@@ -21,6 +22,49 @@ import { sendSecurityAlertEmail } from '../utils/email';
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+[\]{};':",./<>?~`|\\-]).{12,}$/;
 
 const isValidString = (value: unknown): value is string => typeof value === 'string';
+
+// Verifies a signed CAPTCHA and enforces single use by consuming its signature.
+// Returns null on success, or an error message string on failure.
+const verifyCaptcha = async (captchaText: unknown, captchaKey: unknown): Promise<string | null> => {
+  if (!isValidString(captchaText) || !isValidString(captchaKey)) {
+    return 'CAPTCHA verification code is required.';
+  }
+
+  let expectedText: string;
+  let expires: number;
+  let signature: string;
+  try {
+    const decoded = Buffer.from(captchaKey, 'base64').toString('utf-8');
+    [expectedText, , signature] = decoded.split('.');
+    expires = parseInt(decoded.split('.')[1], 10);
+  } catch {
+    return 'CAPTCHA verification failed.';
+  }
+
+  if (!expectedText || !signature || isNaN(expires)) {
+    return 'CAPTCHA verification failed.';
+  }
+
+  if (Date.now() > expires) {
+    return 'CAPTCHA has expired. Please refresh and try again.';
+  }
+
+  const secret = process.env.JWT_SECRET || 'worklynk-fallback-secret';
+  const expectedSignature = crypto.createHmac('sha256', secret).update(`${expectedText}.${expires}`).digest('hex');
+
+  if (expectedSignature !== signature || captchaText.toUpperCase() !== expectedText.toUpperCase()) {
+    return 'Invalid CAPTCHA code. Please try again.';
+  }
+
+  // Enforce single use: the unique index rejects a signature that was already consumed.
+  try {
+    await UsedCaptcha.create({ signature, expiresAt: new Date(expires) });
+  } catch {
+    return 'This CAPTCHA has already been used. Please refresh and try again.';
+  }
+
+  return null;
+};
 
 export const register = async (req: AuthenticatedRequest, res: Response) => {
   const { email, password, role } = req.body;
@@ -88,25 +132,10 @@ export const registerSelf = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'All fields (email, password, verification code) are required.' });
     }
 
-    // CAPTCHA verification
-    try {
-      const decoded = Buffer.from(captchaKey, 'base64').toString('utf-8');
-      const [expectedText, expiresStr, signature] = decoded.split('.');
-      const expires = parseInt(expiresStr, 10);
-      
-      if (Date.now() > expires) {
-        return res.status(400).json({ message: 'CAPTCHA has expired. Please refresh and try again.' });
-      }
-      
-      const secret = process.env.JWT_SECRET || 'worklynk-fallback-secret';
-      const expectedData = `${expectedText}.${expires}`;
-      const expectedSignature = crypto.createHmac('sha256', secret).update(expectedData).digest('hex');
-      
-      if (expectedSignature !== signature || captchaText.toUpperCase() !== expectedText.toUpperCase()) {
-        return res.status(400).json({ message: 'Invalid CAPTCHA code. Please try again.' });
-      }
-    } catch (e) {
-      return res.status(400).json({ message: 'CAPTCHA verification failed.' });
+    // Single-use CAPTCHA verification
+    const captchaError = await verifyCaptcha(captchaText, captchaKey);
+    if (captchaError) {
+      return res.status(400).json({ message: captchaError });
     }
 
     const userExists = await User.findOne({ email });
@@ -172,30 +201,11 @@ export const login = async (req: AuthenticatedRequest, res: Response) => {
   const userAgent = req.headers['user-agent'] || 'unknown';
 
   try {
-    // Custom Text-Based CAPTCHA verification
+    // Single-use CAPTCHA verification
     if (process.env.NODE_ENV !== 'test') {
-      if (!captchaText || !captchaKey) {
-        return res.status(400).json({ message: 'CAPTCHA verification code is required.' });
-      }
-
-      try {
-        const decoded = Buffer.from(captchaKey, 'base64').toString('utf-8');
-        const [expectedText, expiresStr, signature] = decoded.split('.');
-        const expires = parseInt(expiresStr, 10);
-        
-        if (Date.now() > expires) {
-          return res.status(400).json({ message: 'CAPTCHA has expired. Please refresh and try again.' });
-        }
-        
-        const secret = process.env.JWT_SECRET || 'worklynk-fallback-secret';
-        const expectedData = `${expectedText}.${expires}`;
-        const expectedSignature = crypto.createHmac('sha256', secret).update(expectedData).digest('hex');
-        
-        if (expectedSignature !== signature || captchaText.toUpperCase() !== expectedText.toUpperCase()) {
-          return res.status(400).json({ message: 'Invalid CAPTCHA code. Please try again.' });
-        }
-      } catch (e) {
-        return res.status(400).json({ message: 'CAPTCHA verification failed.' });
+      const captchaError = await verifyCaptcha(captchaText, captchaKey);
+      if (captchaError) {
+        return res.status(400).json({ message: captchaError });
       }
     }
 
@@ -853,25 +863,10 @@ export const forgotPassword = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'All fields (email, verification code) are required.' });
     }
 
-    // CAPTCHA verification
-    try {
-      const decoded = Buffer.from(captchaKey, 'base64').toString('utf-8');
-      const [expectedText, expiresStr, signature] = decoded.split('.');
-      const expires = parseInt(expiresStr, 10);
-      
-      if (Date.now() > expires) {
-        return res.status(400).json({ message: 'CAPTCHA has expired. Please refresh and try again.' });
-      }
-      
-      const secret = process.env.JWT_SECRET || 'worklynk-fallback-secret';
-      const expectedData = `${expectedText}.${expires}`;
-      const expectedSignature = crypto.createHmac('sha256', secret).update(expectedData).digest('hex');
-      
-      if (expectedSignature !== signature || captchaText.toUpperCase() !== expectedText.toUpperCase()) {
-        return res.status(400).json({ message: 'Invalid CAPTCHA code. Please try again.' });
-      }
-    } catch (e) {
-      return res.status(400).json({ message: 'CAPTCHA verification failed.' });
+    // Single-use CAPTCHA verification
+    const captchaError = await verifyCaptcha(captchaText, captchaKey);
+    if (captchaError) {
+      return res.status(400).json({ message: captchaError });
     }
 
     const user = await User.findOne({ email });
