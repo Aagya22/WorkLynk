@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
+import { PasswordStrength } from '../components/PasswordStrength';
 import api from '../utils/api';
 
 export const ResetPassword: React.FC = () => {
@@ -109,6 +110,8 @@ export const ResetPassword: React.FC = () => {
           required
           disabled={!token}
         />
+
+        <PasswordStrength password={password} />
 
         <Input
           id="confirmPassword"

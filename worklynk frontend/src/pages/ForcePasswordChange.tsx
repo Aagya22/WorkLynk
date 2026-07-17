@@ -4,6 +4,7 @@ import api from '../utils/api';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
+import { PasswordStrength } from '../components/PasswordStrength';
 
 export const ForcePasswordChange: React.FC = () => {
   const navigate = useNavigate();
@@ -108,6 +109,8 @@ export const ForcePasswordChange: React.FC = () => {
           disabled={loading}
           helperText="Requires uppercase, lowercase, numbers, and symbols."
         />
+
+        <PasswordStrength password={newPassword} />
 
         <Input
           id="confirm-password"

@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { connectDB } from './config/db';
 import { apiLimiter } from './middlewares/rateLimit';
+import { ipFilter } from './middlewares/ipFilter';
 
 dotenv.config();
 
@@ -14,10 +15,7 @@ connectDB();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Trust proxy configuration: req.ip must reflect the real client (not the reverse proxy)
-// for IP-based rate limiting and session IP-binding to work correctly. Configurable via
-// TRUST_PROXY (a hop count, 'true'/'false', or an IP/subnet); defaults to 1 hop in
-// production and disabled in development to avoid X-Forwarded-For spoofing when direct.
+
 const trustProxy = process.env.TRUST_PROXY;
 if (trustProxy !== undefined) {
   if (trustProxy === 'true' || trustProxy === 'false') {
@@ -71,6 +69,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
 }));
 
+app.use(ipFilter);
 app.use(apiLimiter);
 app.use(express.json());
 

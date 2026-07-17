@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
+import { PasswordStrength } from '../components/PasswordStrength';
 import api from '../utils/api';
 
 export const Register: React.FC = () => {
@@ -124,6 +125,8 @@ export const Register: React.FC = () => {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
+
+        <PasswordStrength password={password} />
 
         <Input
           id="confirmPassword"
