@@ -19,11 +19,11 @@ const sanitizeInput = (text: string): string => {
   return text.replace(/<[^>]*>/g, '').trim();
 };
 
-const sanitizeProfileResponse = (profile: any, role: string) => {
+const sanitizeProfileResponse = (profile: any, role: string, isOwner: boolean = false) => {
   const profileObj = profile.toObject ? profile.toObject() : { ...profile };
-  
-  // Regular employees should not receive salary and bank details in the profile response
-  if (role === 'employee') {
+
+  // Employees may see salary/bank details on their own profile, but never on someone else's.
+  if (role === 'employee' && !isOwner) {
     delete profileObj.salary;
     delete profileObj.bankAccount;
   }
@@ -137,7 +137,7 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
     });
 
     return res.status(200).json({
-      profile: sanitizeProfileResponse(profile, req.user!.role)
+      profile: sanitizeProfileResponse(profile, req.user!.role, req.user!._id.toString() === profile.userId.toString())
     });
   } catch (error: any) {
     console.error('Error retrieving profile:', error);
@@ -212,7 +212,7 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
 
     return res.status(200).json({
       message: 'Profile updated successfully.',
-      profile: sanitizeProfileResponse(profile, req.user!.role)
+      profile: sanitizeProfileResponse(profile, req.user!.role, isOwner)
     });
   } catch (error: any) {
     console.error('Error updating profile:', error);

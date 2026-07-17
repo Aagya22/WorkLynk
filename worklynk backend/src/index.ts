@@ -14,6 +14,23 @@ connectDB();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Trust proxy configuration: req.ip must reflect the real client (not the reverse proxy)
+// for IP-based rate limiting and session IP-binding to work correctly. Configurable via
+// TRUST_PROXY (a hop count, 'true'/'false', or an IP/subnet); defaults to 1 hop in
+// production and disabled in development to avoid X-Forwarded-For spoofing when direct.
+const trustProxy = process.env.TRUST_PROXY;
+if (trustProxy !== undefined) {
+  if (trustProxy === 'true' || trustProxy === 'false') {
+    app.set('trust proxy', trustProxy === 'true');
+  } else if (!isNaN(Number(trustProxy))) {
+    app.set('trust proxy', Number(trustProxy));
+  } else {
+    app.set('trust proxy', trustProxy);
+  }
+} else {
+  app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : false);
+}
+
 // Hardened Security Middleware
 app.use(helmet({
   contentSecurityPolicy: {

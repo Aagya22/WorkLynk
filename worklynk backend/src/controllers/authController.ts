@@ -138,15 +138,21 @@ export const registerSelf = async (req: Request, res: Response) => {
       return res.status(400).json({ message: captchaError });
     }
 
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: 'A user with this email already exists.' });
-    }
-
+    // Validate password format before any existence check so it cannot be used as an enumeration oracle.
     if (!passwordRegex.test(password)) {
       return res.status(400).json({
         message: 'Password must be at least 12 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
       });
+    }
+
+    // Generic response used for both new and already-registered emails to prevent user enumeration.
+    const genericResponse = {
+      message: 'Registration request received. If the email is eligible, an administrator will review it before the account can be used.'
+    };
+
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(201).json(genericResponse);
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -159,7 +165,7 @@ export const registerSelf = async (req: Request, res: Response) => {
     });
 
     const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
-    
+
     await AuditLog.create({
       userId: newUser._id,
       actionType: 'USER_SELF_REGISTRATION',
@@ -180,15 +186,7 @@ export const registerSelf = async (req: Request, res: Response) => {
       });
     }
 
-    return res.status(201).json({
-      message: 'Registration request submitted successfully. An administrator must approve your account before you can log in.',
-      user: {
-        id: newUser._id,
-        email: newUser.email,
-        role: newUser.role,
-        approvalStatus: newUser.approvalStatus
-      }
-    });
+    return res.status(201).json(genericResponse);
   } catch (error: any) {
     console.error('Error during self registration:', error);
     return res.status(500).json({ message: 'An internal server error occurred.' });
@@ -704,9 +702,14 @@ export const forceChangePassword = async (req: AuthenticatedRequest, res: Respon
       return res.status(400).json({ message: 'All fields (email, currentPassword, newPassword) are required.' });
     }
 
+    // Generic credential-failure message to avoid revealing whether the email is registered.
+    const genericAuthError = { message: 'Invalid email or current password.' };
+
     const user = await User.findOne({ email });
     if (!user || !user.isActive) {
-      return res.status(401).json({ message: 'Invalid credentials or user does not exist.' });
+      // Equalize timing with the password-verification path for a non-existent account.
+      await bcrypt.compare(currentPassword, '$2b$12$DummyHashToPreventTimingEnumerationAttacksSecure123');
+      return res.status(401).json(genericAuthError);
     }
 
     if (user.isLocked) {
@@ -716,7 +719,7 @@ export const forceChangePassword = async (req: AuthenticatedRequest, res: Respon
     const isMatch = await user.matchPassword(currentPassword);
     if (!isMatch) {
       await user.incrementLoginAttempts();
-      return res.status(401).json({ message: 'Incorrect current password.' });
+      return res.status(401).json(genericAuthError);
     }
 
     await user.resetLoginAttempts();
