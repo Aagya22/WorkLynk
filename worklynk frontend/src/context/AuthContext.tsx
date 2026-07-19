@@ -6,6 +6,10 @@ interface User {
   email: string;
   role: 'employee' | 'hr_manager' | 'admin';
   mfaEnabled: boolean;
+  createdAt?: string;
+  passwordChangedAt?: string;
+  previousLogin?: string | null;
+  previousLoginIP?: string | null;
 }
 
 interface AuthContextType {

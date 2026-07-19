@@ -294,6 +294,8 @@ export const login = async (req: AuthenticatedRequest, res: Response) => {
       });
     }
 
+    user.previousLogin = user.lastLogin;
+    user.previousLoginIP = user.lastLoginIP;
     user.lastLogin = new Date();
     user.lastLoginIP = clientIP;
     await user.save();
@@ -396,6 +398,8 @@ export const verifyMFA = async (req: AuthenticatedRequest, res: Response) => {
       return res.status(400).json({ message: 'Invalid verification code.' });
     }
 
+    user.previousLogin = user.lastLogin;
+    user.previousLoginIP = user.lastLoginIP;
     user.lastLogin = new Date();
     user.lastLoginIP = clientIP;
     await user.save();
@@ -827,11 +831,60 @@ export const getMe = async (req: AuthenticatedRequest, res: Response) => {
         email: user.email,
         role: user.role,
         mfaEnabled: user.mfaEnabled,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
+        passwordChangedAt: user.passwordChangedAt,
+        previousLogin: user.previousLogin,
+        previousLoginIP: user.previousLoginIP
       }
     });
   } catch (error: any) {
     console.error('Error retrieving user details:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+};
+
+export const signOutOthers = async (req: AuthenticatedRequest, res: Response) => {
+  const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+
+  try {
+    const user = req.user!;
+    user.sessionVersion += 1;
+    await user.save();
+
+    const payload = {
+      userId: user._id.toString(),
+      role: user.role,
+      sessionVersion: user.sessionVersion,
+      ip: clientIP
+    };
+
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000
+    });
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    await AuditLog.create({
+      userId: user._id,
+      actionType: 'SESSION_REVOKE_OTHERS',
+      targetResource: 'auth',
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'] || 'unknown'
+    });
+
+    return res.status(200).json({ message: 'All other devices have been signed out.' });
+  } catch (error: any) {
+    console.error('Error signing out other sessions:', error);
     return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };

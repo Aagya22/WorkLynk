@@ -7,6 +7,7 @@ import {
   enableMFA,
   disableMFA,
   logout,
+  signOutOthers,
   refresh,
   changePassword,
   forceChangePassword,
@@ -37,6 +38,7 @@ router.post('/mfa/setup', protect, mfaSetupLimiter, setupMFA);
 router.post('/mfa/enable', protect, mfaSetupLimiter, enableMFA);
 router.post('/mfa/disable', protect, mfaSetupLimiter, disableMFA);
 router.post('/logout', protect, logout);
+router.post('/logout-others', protect, signOutOthers);
 router.put('/change-password', protect, changePassword);
 
 // Admin-Only Routes

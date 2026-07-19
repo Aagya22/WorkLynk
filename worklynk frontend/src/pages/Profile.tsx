@@ -7,7 +7,7 @@ import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { PasswordStrength } from '../components/PasswordStrength';
-import { UserCog, Camera, Mail, CalendarDays, ShieldCheck, KeyRound, CheckCircle2, Lock } from 'lucide-react';
+import { UserCog, Camera, Mail, CalendarDays, ShieldCheck, KeyRound, CheckCircle2, Lock, Clock, LogOut } from 'lucide-react';
 
 interface ProfileData {
   fullName: string;
@@ -97,6 +97,20 @@ export const Profile: React.FC = () => {
       setPwError(err.response?.data?.message || 'Failed to change password.');
     } finally {
       setPwSubmitting(false);
+    }
+  };
+
+  const [signingOutOthers, setSigningOutOthers] = useState(false);
+  const handleSignOutOthers = async () => {
+    if (!window.confirm('Sign out of all other devices? Your current session stays active.')) return;
+    setSigningOutOthers(true);
+    try {
+      await api.post('/api/auth/logout-others');
+      alert('All other devices have been signed out.');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to sign out other devices.');
+    } finally {
+      setSigningOutOthers(false);
     }
   };
 
@@ -349,6 +363,12 @@ export const Profile: React.FC = () => {
   const joinedDate = profile?.employmentStartDate
     ? new Date(profile.employmentStartDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
     : '—';
+
+  const lastLoginText = user?.previousLogin
+    ? `${new Date(user.previousLogin).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · ${user.previousLoginIP || 'unknown IP'}`
+    : 'First sign-in';
+  const pwChanged = user?.passwordChangedAt ? new Date(user.passwordChangedAt) : null;
+  const pwDaysLeft = pwChanged ? Math.ceil((pwChanged.getTime() + 90 * 86400000 - Date.now()) / 86400000) : null;
 
   const ReadOnlyField = ({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) => (
     <div className="flex flex-col space-y-1.5">
@@ -655,13 +675,36 @@ export const Profile: React.FC = () => {
                       {user?.mfaEnabled ? (<><CheckCircle2 size={13} /> Active</>) : 'Disabled'}
                     </span>
                   </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex flex-shrink-0 items-center gap-2 text-slate-500"><Clock size={14} /> Last login</span>
+                    <span className="truncate text-right font-medium text-slate-300" title={lastLoginText}>{lastLoginText}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-2 text-slate-500"><KeyRound size={14} /> Password</span>
+                    {pwDaysLeft === null ? (
+                      <span className="font-medium text-slate-300">—</span>
+                    ) : pwDaysLeft <= 0 ? (
+                      <span className="font-semibold text-red-400">Expired</span>
+                    ) : (
+                      <span className={`font-semibold ${pwDaysLeft <= 14 ? 'text-amber-400' : 'text-slate-300'}`}>Expires in {pwDaysLeft}d</span>
+                    )}
+                  </div>
                 </div>
-                <button
-                  onClick={() => { setPwError(''); setPwSuccess(''); setCurPw(''); setNewPw(''); setConfPw(''); setPwOpen(true); }}
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-slate-900/40 py-2.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-slate-900/70 hover:text-slate-100"
-                >
-                  <Lock size={14} /> Change Password
-                </button>
+                <div className="mt-5 space-y-2">
+                  <button
+                    onClick={() => { setPwError(''); setPwSuccess(''); setCurPw(''); setNewPw(''); setConfPw(''); setPwOpen(true); }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-slate-900/40 py-2.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-slate-900/70 hover:text-slate-100"
+                  >
+                    <Lock size={14} /> Change Password
+                  </button>
+                  <button
+                    onClick={handleSignOutOthers}
+                    disabled={signingOutOthers}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-slate-900/40 py-2.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-slate-900/70 hover:text-slate-100 disabled:opacity-50"
+                  >
+                    <LogOut size={14} /> Sign out other devices
+                  </button>
+                </div>
               </div>
             </div>
 
