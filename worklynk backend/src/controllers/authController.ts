@@ -521,6 +521,53 @@ export const enableMFA = async (req: AuthenticatedRequest, res: Response) => {
   }
 };
 
+export const disableMFA = async (req: AuthenticatedRequest, res: Response) => {
+  const { password } = req.body;
+  const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+
+  try {
+    const user = req.user!;
+
+    if (!user.mfaEnabled) {
+      return res.status(400).json({ message: 'MFA is not currently enabled on this account.' });
+    }
+
+    // Require the account password to turn off a security control.
+    if (!isValidString(password)) {
+      return res.status(400).json({ message: 'Your current password is required to disable MFA.' });
+    }
+
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Incorrect password.' });
+    }
+
+    user.mfaEnabled = false;
+    user.mfaSecret = null;
+    user.mfaVerified = false;
+    await user.save();
+
+    await AuditLog.create({
+      userId: user._id,
+      actionType: 'MFA_DISABLED',
+      targetResource: 'user',
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'] || 'unknown'
+    });
+
+    sendSecurityAlertEmail(
+      user.email,
+      'Two-factor authentication disabled',
+      'Two-factor authentication was turned off on your Worklynk account. If this was not you, change your password and re-enable MFA immediately.'
+    );
+
+    return res.status(200).json({ message: 'MFA has been disabled. You can re-enable it at any time.' });
+  } catch (error: any) {
+    console.error('Error disabling MFA:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+};
+
 export const logout = async (req: AuthenticatedRequest, res: Response) => {
   const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
 

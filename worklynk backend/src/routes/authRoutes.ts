@@ -5,6 +5,7 @@ import {
   verifyMFA,
   setupMFA,
   enableMFA,
+  disableMFA,
   logout,
   refresh,
   changePassword,
@@ -34,6 +35,7 @@ router.post('/reset-password', passwordResetLimiter, resetPassword);
 router.get('/me', protect, getMe);
 router.post('/mfa/setup', protect, mfaSetupLimiter, setupMFA);
 router.post('/mfa/enable', protect, mfaSetupLimiter, enableMFA);
+router.post('/mfa/disable', protect, mfaSetupLimiter, disableMFA);
 router.post('/logout', protect, logout);
 router.put('/change-password', protect, changePassword);
 

@@ -169,6 +169,20 @@ export const AdminUserManagement: React.FC = () => {
     }
   };
 
+  const handleResetMfa = async (id: string) => {
+    if (!window.confirm('Reset this user\'s two-factor authentication? They will need to set it up again from their profile. Use this to rescue a user who lost their authenticator.')) return;
+    setProcessingId(id);
+    try {
+      await api.post(`/api/admin/users/${id}/reset-mfa`);
+      alert('User MFA has been reset.');
+      fetchUsers(page);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to reset user MFA.');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const columns = [
     {
       header: 'Account Email',
@@ -272,6 +286,15 @@ export const AdminUserManagement: React.FC = () => {
             >
               Reset PW
             </Button>
+            {(row as any).mfaEnabled && (
+              <Button
+                variant="secondary"
+                onClick={() => handleResetMfa(row._id)}
+                disabled={processingId === row._id}
+              >
+                Reset MFA
+              </Button>
+            )}
           </div>
         );
       }

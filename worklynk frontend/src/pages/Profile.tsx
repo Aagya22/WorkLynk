@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
-import { UserCog, Camera, Mail, CalendarDays, ShieldCheck, KeyRound, CheckCircle2 } from 'lucide-react';
+import { Modal } from '../components/Modal';
+import { PasswordStrength } from '../components/PasswordStrength';
+import { UserCog, Camera, Mail, CalendarDays, ShieldCheck, KeyRound, CheckCircle2, Lock } from 'lucide-react';
 
 interface ProfileData {
   fullName: string;
@@ -20,6 +23,7 @@ interface ProfileData {
 
 export const Profile: React.FC = () => {
   const { user, updateUser } = useAuth();
+  const navigate = useNavigate();
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,6 +61,60 @@ export const Profile: React.FC = () => {
   const [mfaError, setMfaError] = useState('');
   const [mfaSuccess, setMfaSuccess] = useState('');
   const [isSettingUpMfa, setIsSettingUpMfa] = useState(false);
+
+  // Change password
+  const [pwOpen, setPwOpen] = useState(false);
+  const [curPw, setCurPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confPw, setConfPw] = useState('');
+  const [pwSubmitting, setPwSubmitting] = useState(false);
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
+
+  // Disable MFA
+  const [disableOpen, setDisableOpen] = useState(false);
+  const [disablePw, setDisablePw] = useState('');
+  const [disabling, setDisabling] = useState(false);
+  const [disableError, setDisableError] = useState('');
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwError('');
+    if (newPw !== confPw) {
+      setPwError('The new passwords do not match.');
+      return;
+    }
+    setPwSubmitting(true);
+    try {
+      await api.put('/api/auth/change-password', { currentPassword: curPw, newPassword: newPw });
+      setPwSuccess('Password changed successfully. Please log in again.');
+      // The server invalidated this session — send the user back to login.
+      setTimeout(() => {
+        updateUser(null);
+        navigate('/login');
+      }, 1400);
+    } catch (err: any) {
+      setPwError(err.response?.data?.message || 'Failed to change password.');
+    } finally {
+      setPwSubmitting(false);
+    }
+  };
+
+  const handleDisableMfa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDisableError('');
+    setDisabling(true);
+    try {
+      await api.post('/api/auth/mfa/disable', { password: disablePw });
+      if (user && updateUser) updateUser({ ...user, mfaEnabled: false });
+      setDisableOpen(false);
+      setDisablePw('');
+    } catch (err: any) {
+      setDisableError(err.response?.data?.message || 'Failed to disable MFA.');
+    } finally {
+      setDisabling(false);
+    }
+  };
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -494,6 +552,13 @@ export const Profile: React.FC = () => {
                     <p className="text-[11px] text-slate-500 leading-relaxed">
                       Your identity is secured. Next logins will request a 6-digit verification code from your TOTP authenticator device.
                     </p>
+                    <Button
+                      variant="secondary"
+                      fullWidth
+                      onClick={() => { setDisableError(''); setDisablePw(''); setDisableOpen(true); }}
+                    >
+                      Disable 2FA
+                    </Button>
                   </div>
                 ) : isSettingUpMfa ? (
                   <form onSubmit={handleVerifyMfa} className="space-y-4">
@@ -591,6 +656,12 @@ export const Profile: React.FC = () => {
                     </span>
                   </div>
                 </div>
+                <button
+                  onClick={() => { setPwError(''); setPwSuccess(''); setCurPw(''); setNewPw(''); setConfPw(''); setPwOpen(true); }}
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-slate-900/40 py-2.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-slate-900/70 hover:text-slate-100"
+                >
+                  <Lock size={14} /> Change Password
+                </button>
               </div>
             </div>
 
@@ -687,6 +758,41 @@ export const Profile: React.FC = () => {
           </div>
           </div>
         )}
+
+        {/* Change password */}
+        <Modal isOpen={pwOpen} onClose={() => setPwOpen(false)} title="Change Password">
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            {pwError && (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center text-xs font-semibold text-red-400">{pwError}</div>
+            )}
+            {pwSuccess && (
+              <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-3 text-center text-xs font-semibold text-green-400">{pwSuccess}</div>
+            )}
+            <Input id="cur-pw" label="Current Password" type="password" value={curPw} onChange={(e) => setCurPw(e.target.value)} required disabled={pwSubmitting} />
+            <Input id="new-pw" label="New Password" type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} required disabled={pwSubmitting} />
+            <PasswordStrength password={newPw} />
+            <Input id="conf-pw" label="Confirm New Password" type="password" value={confPw} onChange={(e) => setConfPw(e.target.value)} required disabled={pwSubmitting} />
+            <div className="flex justify-end gap-3 border-t border-white/[0.06] pt-4">
+              <Button type="button" variant="secondary" onClick={() => setPwOpen(false)} disabled={pwSubmitting}>Cancel</Button>
+              <Button type="submit" variant="primary" loading={pwSubmitting}>Update Password</Button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* Disable MFA */}
+        <Modal isOpen={disableOpen} onClose={() => setDisableOpen(false)} title="Disable Two-Factor Authentication">
+          <form onSubmit={handleDisableMfa} className="space-y-4">
+            {disableError && (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center text-xs font-semibold text-red-400">{disableError}</div>
+            )}
+            <p className="text-sm text-slate-400">Turning off two-factor authentication lowers your account security. Enter your password to confirm — you can re-enable it any time.</p>
+            <Input id="disable-pw" label="Current Password" type="password" value={disablePw} onChange={(e) => setDisablePw(e.target.value)} required disabled={disabling} />
+            <div className="flex justify-end gap-3 border-t border-white/[0.06] pt-4">
+              <Button type="button" variant="secondary" onClick={() => setDisableOpen(false)} disabled={disabling}>Cancel</Button>
+              <Button type="submit" variant="danger" loading={disabling}>Disable 2FA</Button>
+            </div>
+          </form>
+        </Modal>
       </div>
     </DashboardLayout>
   );

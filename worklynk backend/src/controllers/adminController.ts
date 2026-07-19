@@ -204,6 +204,47 @@ export const forcePasswordReset = async (req: AuthenticatedRequest, res: Respons
   }
 };
 
+export const resetUserMFA = async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params;
+  const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    if (!user.mfaEnabled) {
+      return res.status(400).json({ message: 'This user does not have MFA enabled.' });
+    }
+
+    user.mfaEnabled = false;
+    user.mfaSecret = null;
+    user.mfaVerified = false;
+    await user.save();
+
+    await AuditLog.create({
+      userId: req.user!._id,
+      actionType: 'ADMIN_USER_MFA_RESET',
+      targetResource: `user:${id}`,
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'] || 'unknown'
+    });
+
+    await Notification.create({
+      userId: user._id,
+      title: 'Two-Factor Authentication Reset',
+      message: 'An administrator reset the two-factor authentication on your account. Please set it up again from your profile to stay protected.',
+      type: 'security'
+    });
+
+    return res.status(200).json({ message: 'User MFA has been reset. They can re-enrol from their profile.' });
+  } catch (error: any) {
+    console.error('Error resetting user MFA:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+};
+
 export const getSystemStats = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const totalUsers = await User.countDocuments();
