@@ -132,7 +132,7 @@ export const Payslips: React.FC = () => {
             <FileText size={22} />
           </div>
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">My Payslips</h1>
+            <h1 className="font-display text-3xl font-bold tracking-tight text-slate-100">My Payslips</h1>
             <p className="text-sm font-medium text-slate-400">
               View earnings, deductions history, and export secure PDF statements.
             </p>

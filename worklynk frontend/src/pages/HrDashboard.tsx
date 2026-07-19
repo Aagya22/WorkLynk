@@ -96,7 +96,7 @@ export const HrDashboard: React.FC = () => {
       <div className="space-y-8">
         <div>
           <div className="text-xs font-semibold text-[#4F8CFF] uppercase tracking-[0.15em] mb-1">HR Management</div>
-          <h1 className="text-[36px] font-extrabold tracking-tight text-[#F8FAFC]">HR Operations Center</h1>
+          <h1 className="font-display text-[36px] font-bold tracking-tight text-[#F8FAFC]">HR Operations Center</h1>
           <p className="text-[14px] text-[#94A3B8] font-medium font-sans mt-0.5">
             Monitor organizational metrics, approve pending leave applications, and manage employee records.
           </p>
@@ -119,7 +119,7 @@ export const HrDashboard: React.FC = () => {
         ) : (
           <div className="space-y-8">
             {/* Stat Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <StatCard
                 title="Active Directory"
                 value={`${stats.activeUsers} / ${stats.totalUsers}`}
@@ -144,29 +144,6 @@ export const HrDashboard: React.FC = () => {
                 }
               />
 
-              <StatCard
-                title="Locked Accounts"
-                value={stats.lockedUsers}
-                description={stats.lockedUsers === 0 ? "No active locks" : "Accounts currently locked"}
-                variant="rose"
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                }
-              />
-
-              <StatCard
-                title="Failed Logins (24h)"
-                value={stats.failedLogins24h}
-                description={stats.failedLogins24h === 0 ? "Zero failure warnings" : "Attempts in 24h"}
-                variant="rose"
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                }
-              />
             </div>
 
             {/* Quick Actions & Recent Leaves */}

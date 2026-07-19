@@ -275,8 +275,8 @@ export const downloadPayslipPDF = async (req: AuthenticatedRequest, res: Respons
 };
 
 export const updatePayslip = async (req: AuthenticatedRequest, res: Response) => {
-  if (req.user!.role !== 'admin') {
-    return res.status(403).json({ message: 'Access denied: Only Admins can modify payslips.' });
+  if (req.user!.role !== 'hr_manager') {
+    return res.status(403).json({ message: 'Access denied: Only HR managers can modify payslips.' });
   }
 
   const { id } = req.params;
@@ -378,8 +378,8 @@ export const updatePayslip = async (req: AuthenticatedRequest, res: Response) =>
 };
 
 export const deletePayslip = async (req: AuthenticatedRequest, res: Response) => {
-  if (req.user!.role !== 'admin') {
-    return res.status(403).json({ message: 'Access denied: Only Admins can delete payslips.' });
+  if (req.user!.role !== 'hr_manager') {
+    return res.status(403).json({ message: 'Access denied: Only HR managers can delete payslips.' });
   }
 
   const { id } = req.params;

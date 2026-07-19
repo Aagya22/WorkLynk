@@ -4,7 +4,7 @@ import api from '../utils/api';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
-import { UserCog } from 'lucide-react';
+import { UserCog, Camera, Mail, CalendarDays, ShieldCheck, KeyRound, CheckCircle2 } from 'lucide-react';
 
 interface ProfileData {
   fullName: string;
@@ -282,19 +282,33 @@ export const Profile: React.FC = () => {
 
   const apiBaseURL = (import.meta as any).env.VITE_API_URL || 'http://localhost:5001';
 
+  const roleLabels: Record<string, string> = {
+    employee: 'Employee',
+    hr_manager: 'HR Manager',
+    admin: 'Administrator',
+  };
+  const roleLabel = roleLabels[user?.role || 'employee'];
+  const joinedDate = profile?.employmentStartDate
+    ? new Date(profile.employmentStartDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+    : '—';
+
+  const ReadOnlyField = ({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) => (
+    <div className="flex flex-col space-y-1.5">
+      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</label>
+      <div className={`rounded-xl border border-white/[0.06] bg-slate-950/40 px-4 py-2.5 text-sm text-slate-400 ${mono ? 'font-mono' : ''}`}>
+        {value}
+      </div>
+    </div>
+  );
+
   return (
     <DashboardLayout>
       <div className="space-y-7">
-        <div className="animate-slide-up flex items-center gap-4">
-          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-accent-500/20 bg-accent-500/10 text-accent-400 shadow-glow">
-            <UserCog size={22} />
-          </div>
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">Profile Details</h1>
-            <p className="text-sm font-medium text-slate-400">
-              Manage your contact information, security, and profile photo.
-            </p>
-          </div>
+        <div className="animate-slide-up">
+          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-100">My Profile</h1>
+          <p className="text-sm font-medium text-slate-400">
+            Manage your personal information, security, and profile photo.
+          </p>
         </div>
 
         {loading ? (
@@ -383,99 +397,82 @@ export const Profile: React.FC = () => {
             {error || 'No profile records found. Please contact an HR administrator to initialize your profile.'}
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column: Photo Upload and MFA */}
-            <div className="space-y-6">
-              {/* Photo Upload Card */}
-              <div className="animate-slide-up stagger-1 flex flex-col items-center space-y-4 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 text-center shadow-xl">
-                <div className="relative group">
-                  <div className="w-32 h-32 rounded-full border border-slate-800 bg-slate-900 overflow-hidden flex items-center justify-center relative shadow-2xl">
-                    {previewUrl ? (
-                      <img
-                        src={previewUrl}
-                        alt="Profile Photo Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : profile.profilePhotoPath ? (
-                      <img
-                        src={`${apiBaseURL}${profile.profilePhotoPath}`}
-                        alt="Profile Photo"
-                        className="w-full h-full object-cover"
-                        crossOrigin="use-credentials"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = ''; // Clear source to fallback
-                        }}
-                      />
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <h3 className="text-lg font-bold text-slate-100">{profile.fullName}</h3>
-                  <p className="text-xs px-2.5 py-0.5 bg-slate-900 border border-slate-800 text-slate-400 rounded-full font-bold uppercase tracking-wider inline-block">
-                    {profile.jobTitle}
-                  </p>
-                </div>
-
-                {/* Upload Photo Form */}
-                <form onSubmit={handlePhotoUpload} className="w-full pt-4 border-t border-slate-900 space-y-4">
-                  <div className="text-left space-y-1">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      Upload New Photo
-                    </label>
-                    <input
-                      type="file"
-                      accept=".jpg,.jpeg,.png"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="photo-file"
-                      disabled={uploading}
+          <div className="space-y-6">
+            {/* Profile summary */}
+            <div className="animate-slide-up flex flex-col gap-5 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl sm:flex-row sm:items-center">
+              {/* Avatar with upload overlay */}
+              <div className="group relative mx-auto sm:mx-0">
+                <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
+                  {previewUrl ? (
+                    <img src={previewUrl} alt="Preview" className="h-full w-full object-cover" />
+                  ) : profile.profilePhotoPath ? (
+                    <img
+                      src={`${apiBaseURL}${profile.profilePhotoPath}`}
+                      alt="Profile"
+                      className="h-full w-full object-cover"
+                      crossOrigin="use-credentials"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
-                    <label
-                      htmlFor="photo-file"
-                      className="w-full flex items-center justify-center px-4 py-2.5 border border-dashed border-slate-800 hover:border-slate-700/80 bg-slate-950/20 hover:bg-slate-900/40 rounded-xl text-xs font-semibold text-slate-300 cursor-pointer transition-colors"
-                    >
-                      {selectedFile ? selectedFile.name : 'Select JPG or PNG'}
-                    </label>
-                    <span className="text-[10px] text-slate-500 pl-0.5">Maximum size 2MB</span>
-                  </div>
-
-                  {uploadError && (
-                    <div className="p-2.5 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl">
-                      {uploadError}
-                    </div>
+                  ) : (
+                    <span className="text-3xl font-bold uppercase text-accent-500">{profile.fullName?.charAt(0) || 'U'}</span>
                   )}
-
-                  {uploadSuccess && (
-                    <div className="p-2.5 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold rounded-xl">
-                      {uploadSuccess}
-                    </div>
-                  )}
-
-                  {selectedFile && (
-                    <div className="flex space-x-3 pt-2">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        fullWidth
-                        onClick={handleCancelSelection}
-                        disabled={uploading}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit" variant="primary" fullWidth loading={uploading}>
-                        Apply Photo
-                      </Button>
-                    </div>
-                  )}
-                </form>
+                </div>
+                <label
+                  htmlFor="photo-file"
+                  className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-2xl bg-slate-950/60 opacity-0 transition-opacity group-hover:opacity-100"
+                  title="Change photo"
+                >
+                  <Camera size={20} className="text-white" />
+                </label>
+                <input id="photo-file" type="file" accept=".jpg,.jpeg,.png" onChange={handleFileChange} className="hidden" disabled={uploading} />
               </div>
 
-              {/* MFA Card */}
+              {/* Identity */}
+              <div className="flex-1 text-center sm:text-left">
+                <h2 className="font-display text-2xl font-bold text-slate-100">{profile.fullName}</h2>
+                <p className="mt-0.5 text-sm font-medium text-slate-400">{profile.jobTitle}</p>
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-slate-900 px-3 py-1 text-[11px] font-semibold text-slate-400">
+                    <Mail size={12} /> {user?.email}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-500/20 bg-accent-500/10 px-3 py-1 text-[11px] font-bold text-accent-400">
+                    {roleLabel}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-slate-900 px-3 py-1 text-[11px] font-semibold text-slate-400">
+                    <CalendarDays size={12} /> Joined {joinedDate}
+                  </span>
+                </div>
+              </div>
+
+              {/* Edit trigger */}
+              {!isEditing && (
+                <div className="flex justify-center sm:block">
+                  <Button variant="primary" onClick={() => setIsEditing(true)}>Edit Profile</Button>
+                </div>
+              )}
+            </div>
+
+            {/* Photo apply bar */}
+            {selectedFile && (
+              <form onSubmit={handlePhotoUpload} className="animate-fade-in flex flex-col gap-3 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
+                <span className="truncate text-xs text-slate-400">Selected photo: <span className="font-semibold text-slate-200">{selectedFile.name}</span> · max 2MB</span>
+                <div className="flex gap-2">
+                  <Button type="button" variant="secondary" onClick={handleCancelSelection} disabled={uploading}>Cancel</Button>
+                  <Button type="submit" variant="primary" loading={uploading}>Upload Photo</Button>
+                </div>
+              </form>
+            )}
+            {uploadError && (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs font-semibold text-red-400">{uploadError}</div>
+            )}
+            {uploadSuccess && !selectedFile && (
+              <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-3 text-xs font-semibold text-green-400">{uploadSuccess}</div>
+            )}
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              {/* Security column */}
+              <div className="space-y-6 lg:order-2">
+                {/* MFA Card */}
               <div className="animate-slide-up stagger-2 space-y-4 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-primary-500/10 border border-primary-500/20 rounded-lg text-primary-400">
@@ -574,14 +571,35 @@ export const Profile: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              {/* Account facts */}
+              <div className="animate-slide-up rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl">
+                <h3 className="mb-4 border-b border-white/[0.06] pb-4 text-base font-bold text-slate-100">Account</h3>
+                <div className="space-y-3.5 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-2 text-slate-500"><Mail size={14} /> Email</span>
+                    <span className="truncate font-medium text-slate-200">{user?.email}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-2 text-slate-500"><KeyRound size={14} /> Role</span>
+                    <span className="font-medium text-slate-200">{roleLabel}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-2 text-slate-500"><ShieldCheck size={14} /> 2FA Status</span>
+                    <span className={`flex items-center gap-1.5 font-semibold ${user?.mfaEnabled ? 'text-green-400' : 'text-slate-400'}`}>
+                      {user?.mfaEnabled ? (<><CheckCircle2 size={13} /> Active</>) : 'Disabled'}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Right Column: Edit Profile Form */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="animate-slide-up stagger-3 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl">
+            {/* Personal information (main) */}
+            <div className="space-y-6 lg:order-1 lg:col-span-2">
+              <div className="animate-slide-up rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl">
                 <form onSubmit={handleUpdateProfile} className="space-y-6">
-                  <h3 className="text-lg font-bold text-slate-200 border-b border-slate-900 pb-3 uppercase tracking-wider">
-                    Contact & Personal Information
+                  <h3 className="border-b border-white/[0.06] pb-4 text-base font-bold text-slate-100">
+                    Personal Information
                   </h3>
 
                   {error && (
@@ -607,41 +625,15 @@ export const Profile: React.FC = () => {
                       disabled={!isEditing || saving}
                     />
 
-                    <div className="flex flex-col space-y-1.5">
-                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Job Title
-                      </label>
-                      <input
-                        type="text"
-                        value={profile.jobTitle}
-                        disabled
-                        className="w-full px-4 py-2.5 bg-slate-950/40 border border-slate-900/60 text-slate-500 rounded-xl text-sm cursor-not-allowed"
-                      />
-                    </div>
-
-                    <div className="flex flex-col space-y-1.5">
-                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Date of Birth
-                      </label>
-                      <input
-                        type="text"
-                        value={profile.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString() : 'N/A'}
-                        disabled
-                        className="w-full px-4 py-2.5 bg-slate-950/40 border border-slate-900/60 text-slate-500 rounded-xl text-sm cursor-not-allowed"
-                      />
-                    </div>
-
-                    <div className="flex flex-col space-y-1.5">
-                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Employment Start Date
-                      </label>
-                      <input
-                        type="text"
-                        value={profile.employmentStartDate ? new Date(profile.employmentStartDate).toLocaleDateString() : 'N/A'}
-                        disabled
-                        className="w-full px-4 py-2.5 bg-slate-950/40 border border-slate-900/60 text-slate-500 rounded-xl text-sm cursor-not-allowed"
-                      />
-                    </div>
+                    <ReadOnlyField label="Job Title" value={profile.jobTitle} />
+                    <ReadOnlyField
+                      label="Date of Birth"
+                      value={profile.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString() : 'N/A'}
+                    />
+                    <ReadOnlyField
+                      label="Employment Start Date"
+                      value={profile.employmentStartDate ? new Date(profile.employmentStartDate).toLocaleDateString() : 'N/A'}
+                    />
 
                     <Input
                       id="phone-number"
@@ -667,66 +659,32 @@ export const Profile: React.FC = () => {
 
                   {/* Compensation is returned by the API only for the profile owner and HR/admin. */}
                   {(profile.salary || profile.bankAccount) && (
-                    <div className="pt-6 border-t border-slate-900 space-y-5">
-                      <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wider">
-                        Compensation &amp; Banking
-                      </h4>
+                    <div className="space-y-5 border-t border-white/[0.06] pt-6">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-slate-200">Compensation &amp; Banking</h4>
+                        <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold text-slate-500">Encrypted · HR managed</span>
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div className="flex flex-col space-y-1.5">
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            Salary (Encrypted)
-                          </label>
-                          <input
-                            type="text"
-                            value={profile.salary ? `Rs. ${profile.salary}` : 'N/A'}
-                            disabled
-                            className="w-full px-4 py-2.5 bg-slate-950/40 border border-slate-900/60 text-slate-500 rounded-xl text-sm cursor-not-allowed font-mono"
-                          />
-                        </div>
-
-                        <div className="flex flex-col space-y-1.5">
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            Bank Account Details (Encrypted)
-                          </label>
-                          <input
-                            type="text"
-                            value={profile.bankAccount || 'N/A'}
-                            disabled
-                            className="w-full px-4 py-2.5 bg-slate-950/40 border border-slate-900/60 text-slate-500 rounded-xl text-sm cursor-not-allowed font-mono"
-                          />
-                        </div>
+                        <ReadOnlyField label="Salary" value={profile.salary ? `Rs. ${profile.salary}` : 'N/A'} mono />
+                        <ReadOnlyField label="Bank Account" value={profile.bankAccount || 'N/A'} mono />
                       </div>
                     </div>
                   )}
 
-                  <div className="flex justify-end pt-4 border-t border-slate-900">
-                    {isEditing ? (
-                      <div className="flex space-x-3">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={handleCancelEdit}
-                          disabled={saving}
-                        >
-                          Cancel
-                        </Button>
-                        <Button type="submit" variant="primary" loading={saving}>
-                          Save Changes
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="primary"
-                        onClick={() => setIsEditing(true)}
-                      >
-                        Edit Profile Details
+                  {isEditing && (
+                    <div className="flex justify-end gap-3 border-t border-white/[0.06] pt-4">
+                      <Button type="button" variant="secondary" onClick={handleCancelEdit} disabled={saving}>
+                        Cancel
                       </Button>
-                    )}
-                  </div>
+                      <Button type="submit" variant="primary" loading={saving}>
+                        Save Changes
+                      </Button>
+                    </div>
+                  )}
                 </form>
               </div>
             </div>
+          </div>
           </div>
         )}
       </div>

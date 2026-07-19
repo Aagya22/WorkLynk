@@ -21,15 +21,15 @@ export default {
           950: '#1f2637',
         },
         accent: {
-          400: '#6EA8FF',
-          500: '#4F8CFF',
-          600: '#3B6FE0',
-          700: '#2F58B8',
+          400: 'rgb(var(--accent-400) / <alpha-value>)',
+          500: 'rgb(var(--accent-500) / <alpha-value>)',
+          600: 'rgb(var(--accent-600) / <alpha-value>)',
+          700: 'rgb(var(--accent-700) / <alpha-value>)',
         },
       },
       boxShadow: {
-        glow: '0 0 24px rgba(79, 140, 255, 0.18)',
-        'glow-lg': '0 8px 40px rgba(79, 140, 255, 0.16)',
+        glow: '0 0 24px rgb(var(--accent-500) / 0.20)',
+        'glow-lg': '0 8px 40px rgb(var(--accent-500) / 0.18)',
       },
       keyframes: {
         'fade-in': {

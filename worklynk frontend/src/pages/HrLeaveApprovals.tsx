@@ -185,7 +185,7 @@ export const HrLeaveApprovals: React.FC = () => {
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">Leave Approvals Center</h1>
+            <h1 className="font-display text-3xl font-bold tracking-tight text-slate-100">Leave Approvals Center</h1>
             <p className="text-sm text-slate-400 font-medium max-w-2xl mt-1">
               Review submitted leave requests, write assessment comments, and grant or deny time-off requests.
             </p>

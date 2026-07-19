@@ -4,6 +4,6 @@ import { protect, restrictTo } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-router.get('/', protect, restrictTo('admin', 'hr_manager'), getAuditLogs);
+router.get('/', protect, restrictTo('admin'), getAuditLogs);
 
 export default router;

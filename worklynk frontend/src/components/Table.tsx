@@ -66,7 +66,7 @@ export function Table<T>({
                   {columns.map((col, colIdx) => (
                     <td
                       key={colIdx}
-                      className={`px-6 py-3.5 text-[#F8FAFC]/90 font-medium text-[13.5px] whitespace-nowrap align-middle ${col.className || ''}`}
+                      className={`px-6 py-3.5 text-slate-100 font-medium text-[13.5px] whitespace-nowrap align-middle ${col.className || ''}`}
                     >
                       {col.accessor(item)}
                     </td>

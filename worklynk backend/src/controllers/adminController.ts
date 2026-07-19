@@ -208,31 +208,21 @@ export const getSystemStats = async (req: AuthenticatedRequest, res: Response) =
   try {
     const totalUsers = await User.countDocuments();
     const activeUsers = await User.countDocuments({ isActive: true });
-    
-    // Count locked users: lockedUntil is set and is in the future
-    const lockedUsers = await User.countDocuments({
-      lockedUntil: { $gt: new Date() }
-    });
-
-    // Count pending leave requests
     const pendingLeaves = await Leave.countDocuments({ status: 'pending' });
 
-    // Recent login failures count (last 24 hours)
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const failedLogins24h = await AuditLog.countDocuments({
-      actionType: 'LOGIN_FAILURE',
-      createdAt: { $gte: oneDayAgo }
-    });
+    const stats: Record<string, number> = { totalUsers, activeUsers, pendingLeaves };
 
-    return res.status(200).json({
-      stats: {
-        totalUsers,
-        activeUsers,
-        lockedUsers,
-        pendingLeaves,
-        failedLogins24h
-      }
-    });
+    // Security telemetry (locked accounts, failed logins) is admin-only.
+    if (req.user!.role === 'admin') {
+      stats.lockedUsers = await User.countDocuments({ lockedUntil: { $gt: new Date() } });
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      stats.failedLogins24h = await AuditLog.countDocuments({
+        actionType: 'LOGIN_FAILURE',
+        createdAt: { $gte: oneDayAgo }
+      });
+    }
+
+    return res.status(200).json({ stats });
   } catch (error: any) {
     console.error('Error retrieving system statistics:', error);
     return res.status(500).json({ message: 'An internal server error occurred.' });

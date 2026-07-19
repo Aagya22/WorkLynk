@@ -201,7 +201,7 @@ export const Leaves: React.FC = () => {
               <CalendarDays size={22} />
             </div>
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">Leave Requests</h1>
+              <h1 className="font-display text-3xl font-bold tracking-tight text-slate-100">Leave Requests</h1>
               <p className="text-sm font-medium text-slate-400">
                 Submit requests, track approvals, and keep an eye on your balance.
               </p>
