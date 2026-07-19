@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Table } from '../components/Table';
 import { Button } from '../components/Button';
@@ -9,18 +10,26 @@ interface LeaveRequest {
   _id: string;
   startDate: string;
   endDate: string;
-  type: string;
+  type?: string;
+  leaveType?: string;
   status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   reason: string;
-  managerComment?: string;
+  decisionComment?: string | null;
+  decidedAt?: string | null;
+  decidedBy?: { _id: string; email: string; role: string } | null;
   employeeId: {
     _id: string;
     email: string;
+    role?: string;
   };
   createdAt: string;
 }
 
+const roleLabels: Record<string, string> = { employee: 'Employee', hr_manager: 'HR Manager', admin: 'Administrator' };
+
 export const HrLeaveApprovals: React.FC = () => {
+  const { user } = useAuth();
+  const currentRole = user?.role;
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -111,7 +120,14 @@ export const HrLeaveApprovals: React.FC = () => {
     },
     {
       header: 'Employee',
-      accessor: (row: LeaveRequest) => row.employeeId?.email || 'N/A'
+      accessor: (row: LeaveRequest) => (
+        <span className="flex items-center gap-2">
+          <span className="truncate">{row.employeeId?.email || 'N/A'}</span>
+          {row.employeeId?.role === 'hr_manager' && (
+            <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-400">HR</span>
+          )}
+        </span>
+      )
     },
     {
       header: 'Type',
@@ -144,39 +160,45 @@ export const HrLeaveApprovals: React.FC = () => {
       )
     },
     {
-      header: 'Actions',
-      accessor: (row: LeaveRequest) => (
-        <div className="flex items-center space-x-3">
-          {row.status === 'pending' ? (
+      header: 'Decision',
+      accessor: (row: LeaveRequest) => {
+        if (row.status === 'pending') {
+          const isHrRequest = row.employeeId?.role === 'hr_manager';
+          const canAct = !isHrRequest || currentRole === 'admin';
+          if (!canAct) {
+            return <span className="text-xs font-semibold text-amber-400">Requires admin approval</span>;
+          }
+          return (
             <div className="flex items-center space-x-2">
-              <Button
-                variant="primary"
-                onClick={() => {
-                  setSelectedLeave(row);
-                  setDecision('approved');
-                }}
-              >
+              <Button variant="primary" onClick={() => { setSelectedLeave(row); setDecision('approved'); }}>
                 Approve
               </Button>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setSelectedLeave(row);
-                  setDecision('rejected');
-                }}
-              >
+              <Button variant="secondary" onClick={() => { setSelectedLeave(row); setDecision('rejected'); }}>
                 Reject
               </Button>
             </div>
-          ) : row.managerComment ? (
-            <span className="text-xs text-slate-500 italic max-w-xs truncate block" title={row.managerComment}>
-              Comment: {row.managerComment}
-            </span>
-          ) : (
-            <span className="text-xs text-slate-600">Decision completed</span>
-          )}
-        </div>
-      )
+          );
+        }
+
+        if (row.status === 'approved' || row.status === 'rejected') {
+          return (
+            <div className="flex flex-col">
+              <span className="text-xs text-slate-400">
+                {row.status === 'approved' ? 'Approved' : 'Rejected'} by{' '}
+                <span className="font-semibold text-slate-200">{row.decidedBy?.email || 'Unknown'}</span>
+                {row.decidedBy?.role ? ` · ${roleLabels[row.decidedBy.role] || row.decidedBy.role}` : ''}
+              </span>
+              {row.decisionComment && (
+                <span className="max-w-[220px] truncate text-[11px] italic text-slate-500" title={row.decisionComment}>
+                  "{row.decisionComment}"
+                </span>
+              )}
+            </div>
+          );
+        }
+
+        return <span className="text-xs text-slate-600">—</span>;
+      }
     }
   ];
 

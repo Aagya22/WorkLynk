@@ -4,6 +4,7 @@ import api from '../utils/api';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { StatCard } from '../components/StatCard';
 import { Table } from '../components/Table';
+import { CalendarCard } from '../components/CalendarCard';
 import { Users, ShieldAlert, FileSpreadsheet, Unlock } from 'lucide-react';
 
 interface AuditLogRecord {
@@ -197,6 +198,9 @@ export const AdminDashboard: React.FC = () => {
                 }
               />
             </div>
+
+            {/* Company calendar — admin can add/remove holidays & events */}
+            <CalendarCard canManage />
 
             {/* Quick Control Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-2">

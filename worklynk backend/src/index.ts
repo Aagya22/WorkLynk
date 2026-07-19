@@ -99,6 +99,7 @@ import leaveRoutes from './routes/leaveRoutes';
 import auditRoutes from './routes/auditRoutes';
 import adminRoutes from './routes/adminRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import holidayRoutes from './routes/holidayRoutes';
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
@@ -108,6 +109,7 @@ app.use('/api/leaves', leaveRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/holidays', holidayRoutes);
 
 import { protect } from './middlewares/authMiddleware';
 

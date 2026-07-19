@@ -4,6 +4,7 @@ import api from '../utils/api';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { StatCard } from '../components/StatCard';
 import { Table } from '../components/Table';
+import { CalendarCard } from '../components/CalendarCard';
 import { Users, CalendarDays } from 'lucide-react';
 
 interface LeaveRequest {
@@ -145,6 +146,9 @@ export const HrDashboard: React.FC = () => {
               />
 
             </div>
+
+            {/* Company calendar */}
+            <CalendarCard />
 
             {/* Quick Actions & Recent Leaves */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

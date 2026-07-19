@@ -150,7 +150,8 @@ export const getAllLeaves = async (req: AuthenticatedRequest, res: Response) => 
     }
 
     const leaves = await Leave.find(filter)
-      .populate('employeeId', 'email')
+      .populate('employeeId', 'email role')
+      .populate('decidedBy', 'email role')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -206,6 +207,12 @@ export const decideLeave = async (req: AuthenticatedRequest, res: Response) => {
     // Business Logic: Block self-approval
     if (req.user!._id.toString() === leave.employeeId.toString()) {
       return res.status(400).json({ message: 'Access denied: You cannot approve or reject your own leave request.' });
+    }
+
+    // An HR manager's own leave request can only be decided by an administrator.
+    const requester = await User.findById(leave.employeeId).select('role');
+    if (requester?.role === 'hr_manager' && req.user!.role !== 'admin') {
+      return res.status(403).json({ message: 'HR leave requests can only be approved by an administrator.' });
     }
 
     if (status === 'approved' && leave.leaveType === 'annual') {
