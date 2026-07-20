@@ -10,6 +10,7 @@ import {
   signOutOthers,
   refresh,
   changePassword,
+  changeEmail,
   forceChangePassword,
   getMe,
   getCaptcha,
@@ -40,6 +41,7 @@ router.post('/mfa/disable', protect, mfaSetupLimiter, disableMFA);
 router.post('/logout', protect, logout);
 router.post('/logout-others', protect, signOutOthers);
 router.put('/change-password', protect, changePassword);
+router.put('/change-email', protect, changeEmail);
 
 // Admin-Only Routes
 router.post('/register', protect, restrictTo('admin'), register);

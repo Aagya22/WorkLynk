@@ -844,10 +844,30 @@ export const getMe = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 export const signOutOthers = async (req: AuthenticatedRequest, res: Response) => {
+  const { password, mfaCode } = req.body;
   const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
 
   try {
     const user = req.user!;
+
+    // Step-up: require the password, and a second factor when MFA is enabled.
+    if (!isValidString(password)) {
+      return res.status(400).json({ message: 'Your current password is required.' });
+    }
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Incorrect password.' });
+    }
+    if (user.mfaEnabled) {
+      if (!isValidString(mfaCode)) {
+        return res.status(400).json({ message: 'Your authenticator code is required.' });
+      }
+      const ok = speakeasy.totp.verify({ secret: user.mfaSecret!, encoding: 'base32', token: mfaCode, window: 1 });
+      if (!ok) {
+        return res.status(401).json({ message: 'Invalid authenticator code.' });
+      }
+    }
+
     user.sessionVersion += 1;
     await user.save();
 
@@ -885,6 +905,61 @@ export const signOutOthers = async (req: AuthenticatedRequest, res: Response) =>
     return res.status(200).json({ message: 'All other devices have been signed out.' });
   } catch (error: any) {
     console.error('Error signing out other sessions:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+};
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export const changeEmail = async (req: AuthenticatedRequest, res: Response) => {
+  const { newEmail, password } = req.body;
+  const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+
+  try {
+    const user = req.user!;
+
+    if (!isValidString(newEmail) || !isValidString(password)) {
+      return res.status(400).json({ message: 'A new email and your current password are required.' });
+    }
+
+    const normalized = newEmail.toLowerCase().trim();
+    if (!emailRegex.test(normalized)) {
+      return res.status(400).json({ message: 'Please enter a valid email address.' });
+    }
+
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Incorrect password.' });
+    }
+
+    if (normalized === user.email) {
+      return res.status(400).json({ message: 'That is already your email address.' });
+    }
+
+    const exists = await User.findOne({ email: normalized });
+    if (exists) {
+      return res.status(400).json({ message: 'That email address is already in use.' });
+    }
+
+    const oldEmail = user.email;
+    user.email = normalized;
+    await user.save();
+
+    await AuditLog.create({
+      userId: user._id,
+      actionType: 'EMAIL_CHANGE',
+      targetResource: 'user',
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'] || 'unknown',
+      metadata: { from: oldEmail, to: normalized }
+    });
+
+    sendSecurityAlertEmail(oldEmail, 'Your Worklynk email was changed', `The email address on your account was changed to ${normalized}. If this was not you, contact system administration immediately.`);
+    sendSecurityAlertEmail(normalized, 'Email address confirmed', 'This email address is now associated with your Worklynk account.');
+
+    return res.status(200).json({ message: 'Email address updated successfully.', email: normalized });
+  } catch (error: any) {
+    console.error('Error changing email:', error);
     return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };

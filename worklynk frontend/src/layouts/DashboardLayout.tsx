@@ -26,7 +26,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
 
   return (
     <div
-      data-theme={user?.role === 'admin' ? 'admin' : 'staff'}
+      data-theme="staff"
       className="h-screen w-screen overflow-hidden bg-slate-950 flex relative text-slate-100 font-sans"
     >
       {/* Background glow spots */}

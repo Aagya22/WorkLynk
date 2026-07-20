@@ -5,6 +5,7 @@ import {
   getProfile,
   updateProfile,
   uploadProfilePhoto,
+  removeProfilePhoto,
   generateExportConsentToken,
   exportEmployeeData
 } from '../controllers/profileController';
@@ -24,6 +25,7 @@ router.post(
   validateMagicBytes,
   uploadProfilePhoto
 );
+router.delete('/:userId/photo', protect, removeProfilePhoto);
 
 // GDPR Compliance Data Export routes
 router.post('/:userId/export-token', protect, generateExportConsentToken);

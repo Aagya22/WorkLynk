@@ -44,7 +44,22 @@ export const Profile: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [emergencyContact, setEmergencyContact] = useState('');
+  const [dob, setDob] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [removingPhoto, setRemovingPhoto] = useState(false);
+
+  // Change email
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailPw, setEmailPw] = useState('');
+  const [emailSubmitting, setEmailSubmitting] = useState(false);
+  const [emailError, setEmailError] = useState('');
+
+  // Sign out other devices (step-up)
+  const [soOpen, setSoOpen] = useState(false);
+  const [soPw, setSoPw] = useState('');
+  const [soMfa, setSoMfa] = useState('');
+  const [soError, setSoError] = useState('');
 
   // Photo upload states
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -101,16 +116,56 @@ export const Profile: React.FC = () => {
   };
 
   const [signingOutOthers, setSigningOutOthers] = useState(false);
-  const handleSignOutOthers = async () => {
-    if (!window.confirm('Sign out of all other devices? Your current session stays active.')) return;
+  const handleSignOutSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSoError('');
     setSigningOutOthers(true);
     try {
-      await api.post('/api/auth/logout-others');
+      await api.post('/api/auth/logout-others', { password: soPw, mfaCode: soMfa });
+      setSoOpen(false);
+      setSoPw('');
+      setSoMfa('');
       alert('All other devices have been signed out.');
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to sign out other devices.');
+      setSoError(err.response?.data?.message || 'Failed to sign out other devices.');
     } finally {
       setSigningOutOthers(false);
+    }
+  };
+
+  const handleChangeEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailError('');
+    setEmailSubmitting(true);
+    try {
+      const res = await api.put('/api/auth/change-email', { newEmail, password: emailPw });
+      if (user && updateUser) updateUser({ ...user, email: res.data.email || newEmail });
+      setEmailOpen(false);
+      setNewEmail('');
+      setEmailPw('');
+    } catch (err: any) {
+      setEmailError(err.response?.data?.message || 'Failed to change email.');
+    } finally {
+      setEmailSubmitting(false);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!user) return;
+    if (!window.confirm('Remove your profile photo?')) return;
+    setRemovingPhoto(true);
+    try {
+      await api.delete(`/api/profile/${user.id}/photo`);
+      setProfile((prev) => (prev ? { ...prev, profilePhotoPath: undefined } : prev));
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }
+      setSelectedFile(null);
+    } catch (err: any) {
+      setUploadError(err.response?.data?.message || 'Failed to remove photo.');
+    } finally {
+      setRemovingPhoto(false);
     }
   };
 
@@ -141,6 +196,7 @@ export const Profile: React.FC = () => {
         setFullName(p.fullName || '');
         setPhoneNumber(p.phoneNumber || '');
         setEmergencyContact(p.emergencyContact || '');
+        setDob(p.dateOfBirth && !isNaN(new Date(p.dateOfBirth).getTime()) ? new Date(p.dateOfBirth).toISOString().slice(0, 10) : '');
       }
     } catch (err: any) {
       if (err.response?.status === 404) {
@@ -179,6 +235,7 @@ export const Profile: React.FC = () => {
         setFullName(p.fullName || '');
         setPhoneNumber(p.phoneNumber || '');
         setEmergencyContact(p.emergencyContact || '');
+        setDob(p.dateOfBirth && !isNaN(new Date(p.dateOfBirth).getTime()) ? new Date(p.dateOfBirth).toISOString().slice(0, 10) : '');
       }
     } catch (err: any) {
       setObError(err.response?.data?.message || 'Failed to set up your profile.');
@@ -203,7 +260,8 @@ export const Profile: React.FC = () => {
       const response = await api.put(`/api/profile/${user.id}`, {
         fullName,
         phoneNumber,
-        emergencyContact
+        emergencyContact,
+        dateOfBirth: dob
       });
 
       setSuccess('Profile updated successfully.');
@@ -479,30 +537,42 @@ export const Profile: React.FC = () => {
             {/* Profile summary */}
             <div className="animate-slide-up flex flex-col gap-5 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl sm:flex-row sm:items-center">
               {/* Avatar with upload overlay */}
-              <div className="group relative mx-auto sm:mx-0">
-                <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
-                  {previewUrl ? (
-                    <img src={previewUrl} alt="Preview" className="h-full w-full object-cover" />
-                  ) : profile.profilePhotoPath ? (
-                    <img
-                      src={`${apiBaseURL}${profile.profilePhotoPath}`}
-                      alt="Profile"
-                      className="h-full w-full object-cover"
-                      crossOrigin="use-credentials"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                    />
-                  ) : (
-                    <span className="text-3xl font-bold uppercase text-accent-500">{profile.fullName?.charAt(0) || 'U'}</span>
-                  )}
+              <div className="mx-auto flex flex-col items-center gap-2 sm:mx-0">
+                <div className="group relative">
+                  <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
+                    {previewUrl ? (
+                      <img src={previewUrl} alt="Preview" className="h-full w-full object-cover" />
+                    ) : profile.profilePhotoPath ? (
+                      <img
+                        src={`${apiBaseURL}${profile.profilePhotoPath}`}
+                        alt="Profile"
+                        className="h-full w-full object-cover"
+                        crossOrigin="use-credentials"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    ) : (
+                      <span className="text-3xl font-bold uppercase text-accent-500">{profile.fullName?.charAt(0) || 'U'}</span>
+                    )}
+                  </div>
+                  <label
+                    htmlFor="photo-file"
+                    className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-2xl bg-slate-950/60 opacity-0 transition-opacity group-hover:opacity-100"
+                    title="Change photo"
+                  >
+                    <Camera size={20} className="text-white" />
+                  </label>
+                  <input id="photo-file" type="file" accept=".jpg,.jpeg,.png" onChange={handleFileChange} className="hidden" disabled={uploading} />
                 </div>
-                <label
-                  htmlFor="photo-file"
-                  className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-2xl bg-slate-950/60 opacity-0 transition-opacity group-hover:opacity-100"
-                  title="Change photo"
-                >
-                  <Camera size={20} className="text-white" />
-                </label>
-                <input id="photo-file" type="file" accept=".jpg,.jpeg,.png" onChange={handleFileChange} className="hidden" disabled={uploading} />
+                {profile.profilePhotoPath && !selectedFile && (
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    disabled={removingPhoto}
+                    className="text-[11px] font-semibold text-slate-500 transition-colors hover:text-red-400 disabled:opacity-50"
+                  >
+                    Remove photo
+                  </button>
+                )}
               </div>
 
               {/* Identity */}
@@ -698,9 +768,14 @@ export const Profile: React.FC = () => {
                     <Lock size={14} /> Change Password
                   </button>
                   <button
-                    onClick={handleSignOutOthers}
-                    disabled={signingOutOthers}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-slate-900/40 py-2.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-slate-900/70 hover:text-slate-100 disabled:opacity-50"
+                    onClick={() => { setEmailError(''); setNewEmail(''); setEmailPw(''); setEmailOpen(true); }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-slate-900/40 py-2.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-slate-900/70 hover:text-slate-100"
+                  >
+                    <Mail size={14} /> Change Email
+                  </button>
+                  <button
+                    onClick={() => { setSoError(''); setSoPw(''); setSoMfa(''); setSoOpen(true); }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-slate-900/40 py-2.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-slate-900/70 hover:text-slate-100"
                   >
                     <LogOut size={14} /> Sign out other devices
                   </button>
@@ -740,9 +815,14 @@ export const Profile: React.FC = () => {
                     />
 
                     <ReadOnlyField label="Job Title" value={profile.jobTitle} />
-                    <ReadOnlyField
+                    <Input
+                      id="dob"
                       label="Date of Birth"
-                      value={profile.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString() : 'N/A'}
+                      type="date"
+                      value={dob}
+                      onChange={(e) => setDob(e.target.value)}
+                      required
+                      disabled={!isEditing || saving}
                     />
                     <ReadOnlyField
                       label="Employment Start Date"
@@ -772,7 +852,7 @@ export const Profile: React.FC = () => {
                   </div>
 
                   {/* Compensation is returned by the API only for the profile owner and HR/admin. */}
-                  {(profile.salary || profile.bankAccount) && (
+                  {user?.role !== 'admin' && (profile.salary || profile.bankAccount) && (
                     <div className="space-y-5 border-t border-white/[0.06] pt-6">
                       <div className="flex items-center gap-2">
                         <h4 className="text-sm font-bold text-slate-200">Compensation &amp; Banking</h4>
@@ -833,6 +913,40 @@ export const Profile: React.FC = () => {
             <div className="flex justify-end gap-3 border-t border-white/[0.06] pt-4">
               <Button type="button" variant="secondary" onClick={() => setDisableOpen(false)} disabled={disabling}>Cancel</Button>
               <Button type="submit" variant="danger" loading={disabling}>Disable 2FA</Button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* Change email */}
+        <Modal isOpen={emailOpen} onClose={() => setEmailOpen(false)} title="Change Email Address">
+          <form onSubmit={handleChangeEmail} className="space-y-4">
+            {emailError && (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center text-xs font-semibold text-red-400">{emailError}</div>
+            )}
+            <p className="text-sm text-slate-400">Your email is used to sign in. Enter a new address and confirm with your password.</p>
+            <Input id="new-email" label="New Email" type="email" placeholder="you@example.com" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required disabled={emailSubmitting} />
+            <Input id="email-pw" label="Current Password" type="password" value={emailPw} onChange={(e) => setEmailPw(e.target.value)} required disabled={emailSubmitting} />
+            <div className="flex justify-end gap-3 border-t border-white/[0.06] pt-4">
+              <Button type="button" variant="secondary" onClick={() => setEmailOpen(false)} disabled={emailSubmitting}>Cancel</Button>
+              <Button type="submit" variant="primary" loading={emailSubmitting}>Update Email</Button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* Sign out other devices (step-up) */}
+        <Modal isOpen={soOpen} onClose={() => setSoOpen(false)} title="Sign Out Other Devices">
+          <form onSubmit={handleSignOutSubmit} className="space-y-4">
+            {soError && (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center text-xs font-semibold text-red-400">{soError}</div>
+            )}
+            <p className="text-sm text-slate-400">This ends every other session. Your current device stays signed in. Confirm your identity to continue.</p>
+            <Input id="so-pw" label="Current Password" type="password" value={soPw} onChange={(e) => setSoPw(e.target.value)} required disabled={signingOutOthers} />
+            {user?.mfaEnabled && (
+              <Input id="so-mfa" label="Authenticator Code" type="text" placeholder="e.g. 123456" value={soMfa} onChange={(e) => setSoMfa(e.target.value)} required disabled={signingOutOthers} />
+            )}
+            <div className="flex justify-end gap-3 border-t border-white/[0.06] pt-4">
+              <Button type="button" variant="secondary" onClick={() => setSoOpen(false)} disabled={signingOutOthers}>Cancel</Button>
+              <Button type="submit" variant="danger" loading={signingOutOthers}>Sign out other devices</Button>
             </div>
           </form>
         </Modal>

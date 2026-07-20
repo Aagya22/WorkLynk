@@ -16,6 +16,11 @@ const sanitizeInput = (text: string): string => {
 // Regex to validate YYYY-MM month format
 const monthRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
 
+
+const PAYSLIP_EDIT_WINDOW_DAYS = 7;
+const isPayslipLocked = (createdAt: Date) =>
+  (Date.now() - new Date(createdAt).getTime()) / 86400000 > PAYSLIP_EDIT_WINDOW_DAYS;
+
 export const createPayslip = async (req: AuthenticatedRequest, res: Response) => {
   if (req.user!.role === 'employee') {
     return res.status(403).json({ message: 'Access denied: Employees cannot create payslips.' });
@@ -306,6 +311,12 @@ export const updatePayslip = async (req: AuthenticatedRequest, res: Response) =>
       return res.status(404).json({ message: 'Payslip not found.' });
     }
 
+    if (isPayslipLocked(payslip.createdAt)) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ message: `This payslip is locked. Payslips can only be edited within ${PAYSLIP_EDIT_WINDOW_DAYS} days of creation.` });
+    }
+
     // Keep old values for audit logging
     const oldValues = {
       basicSalary: payslip.basicSalary,
@@ -393,6 +404,10 @@ export const deletePayslip = async (req: AuthenticatedRequest, res: Response) =>
     const payslip = await Payslip.findById(id);
     if (!payslip) {
       return res.status(404).json({ message: 'Payslip not found.' });
+    }
+
+    if (isPayslipLocked(payslip.createdAt)) {
+      return res.status(400).json({ message: `This payslip is locked. Payslips can only be deleted within ${PAYSLIP_EDIT_WINDOW_DAYS} days of creation.` });
     }
 
     await Payslip.findByIdAndDelete(id);

@@ -57,6 +57,53 @@ export const createHoliday = async (req: AuthenticatedRequest, res: Response) =>
   }
 };
 
+// Admin-only: edit a holiday or event.
+export const updateHoliday = async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params;
+  const { title, date, type } = req.body;
+  const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+
+  try {
+    const holiday = await Holiday.findById(id);
+    if (!holiday) {
+      return res.status(404).json({ message: 'Calendar entry not found.' });
+    }
+
+    if (title !== undefined) {
+      if (typeof title !== 'string' || !title.trim()) {
+        return res.status(400).json({ message: 'A valid title is required.' });
+      }
+      holiday.title = sanitizeInput(title);
+    }
+    if (date !== undefined) {
+      const when = new Date(date);
+      if (isNaN(when.getTime())) {
+        return res.status(400).json({ message: 'Invalid date.' });
+      }
+      holiday.date = when;
+    }
+    if (type !== undefined) {
+      holiday.type = type === 'event' ? 'event' : 'holiday';
+    }
+
+    await holiday.save();
+
+    await AuditLog.create({
+      userId: req.user!._id,
+      actionType: 'HOLIDAY_UPDATED',
+      targetResource: `holiday:${id}`,
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'] || 'unknown',
+      metadata: { title: holiday.title }
+    });
+
+    return res.status(200).json({ message: 'Calendar entry updated.', holiday });
+  } catch (error: any) {
+    console.error('Error updating holiday:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+};
+
 // Admin-only: remove a holiday or event.
 export const deleteHoliday = async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;

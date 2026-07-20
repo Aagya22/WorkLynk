@@ -241,11 +241,12 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
     }
 
     if (req.user!.role === 'employee') {
-      // Employees can only edit non-sensitive fields
-      const { fullName, phoneNumber, emergencyContact } = req.body;
+
+      const { fullName, phoneNumber, emergencyContact, dateOfBirth } = req.body;
       if (fullName !== undefined) profile.fullName = sanitizeInput(fullName);
       if (phoneNumber !== undefined) profile.phoneNumber = sanitizeInput(phoneNumber);
       if (emergencyContact !== undefined) profile.emergencyContact = sanitizeInput(emergencyContact);
+      if (dateOfBirth !== undefined) profile.dateOfBirth = dateOfBirth;
     } else {
       // HR/Admin can update all fields
       const {
@@ -339,6 +340,53 @@ export const uploadProfilePhoto = async (req: AuthenticatedRequest, res: Respons
     });
   } catch (error: any) {
     console.error('Error uploading profile photo:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+};
+
+export const removeProfilePhoto = async (req: AuthenticatedRequest, res: Response) => {
+  const { userId } = req.params;
+  const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+
+  try {
+    const profile = await Profile.findOne({ userId });
+    if (!profile) {
+      return res.status(404).json({ message: 'Profile not found.' });
+    }
+
+    const isOwner = req.user!._id.toString() === profile.userId.toString();
+    if (req.user!.role === 'employee' && !isOwner) {
+      return res.status(403).json({ message: 'Access denied: You cannot modify this profile.' });
+    }
+
+    if (!profile.profilePhotoPath) {
+      return res.status(400).json({ message: 'There is no profile photo to remove.' });
+    }
+
+    const oldPath = path.join(__dirname, '../..', profile.profilePhotoPath);
+    if (fs.existsSync(oldPath)) {
+      try {
+        fs.unlinkSync(oldPath);
+      } catch (e) {
+        console.error('Failed to delete photo file:', e);
+      }
+    }
+
+    profile.profilePhotoPath = null;
+    await profile.save();
+
+    await AuditLog.create({
+      userId: req.user!._id,
+      actionType: 'PROFILE_PHOTO_REMOVED',
+      targetResource: `profile:${profile._id}`,
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'] || 'unknown',
+      metadata: { targetUserId: userId }
+    });
+
+    return res.status(200).json({ message: 'Profile photo removed.', profilePhotoPath: null });
+  } catch (error: any) {
+    console.error('Error removing profile photo:', error);
     return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
