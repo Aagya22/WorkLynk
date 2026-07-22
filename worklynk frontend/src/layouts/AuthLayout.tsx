@@ -1,28 +1,81 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { Shield, ArrowLeft, KeyRound, Lock, ScrollText } from 'lucide-react';
+
+const HIGHLIGHTS = [
+  { icon: <KeyRound size={15} />, title: 'Multi-factor authentication', body: 'TOTP on every account, with admin-assisted recovery.' },
+  { icon: <Lock size={15} />, title: 'Encrypted records', body: 'Salary and bank details sealed with AES-256-GCM.' },
+  { icon: <ScrollText size={15} />, title: 'Full audit trail', body: 'Every sensitive action logged and reviewable.' },
+];
 
 export const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden select-none">
-      {/* Decorative gradient glow spots */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
-      
-      {/* Centered layout card */}
-      <div className="w-full max-w-md z-10">
-        <div className="flex flex-col items-center mb-8">
-          <div className="p-3.5 bg-primary-950 rounded-2xl border border-primary-500/20 mb-4 shadow-xl shadow-primary-500/5">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-extrabold tracking-tight gradient-text">Worklynk</h1>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mt-1.5">Secure HR Management System</p>
+    <div className="content-scope grid min-h-screen bg-[#F7F6F3] font-sans lg:grid-cols-[1.05fr_1fr]">
+      {/* Brand panel */}
+      <aside className="relative hidden overflow-hidden bg-[#14110F] p-12 lg:flex lg:flex-col lg:justify-between">
+        <div className="aurora float-slow absolute -left-16 -top-20 h-80 w-80 bg-[#3B3560] opacity-40" />
+        <div className="aurora float-slower absolute -bottom-24 -right-10 h-80 w-80 bg-[#1F3A5F] opacity-40" />
+
+        <Link to="/" className="group relative z-10 flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#14110F] transition-transform duration-300 group-hover:-rotate-6">
+            <Shield size={19} />
+          </span>
+          <span className="font-display text-[21px] font-bold tracking-[-0.02em] text-white">Worklynk</span>
+        </Link>
+
+        <div className="relative z-10 max-w-md">
+          <h2 className="font-display text-[40px] font-bold leading-[1.06] tracking-[-0.03em] text-white">
+            The HR workspace your team can actually <span className="gradient-text">trust</span>.
+          </h2>
+          <p className="mt-5 text-[14.5px] leading-relaxed text-white/55">
+            Payslips, leave and employee records in one place, protected from the first login.
+          </p>
+
+          <ul className="mt-10 space-y-5">
+            {HIGHLIGHTS.map((h) => (
+              <li key={h.title} className="flex gap-3.5">
+                <span className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/10 text-white">
+                  {h.icon}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[13.5px] font-bold text-white">{h.title}</p>
+                  <p className="mt-1 text-[12.5px] leading-relaxed text-white/50">{h.body}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
-        
-        <div className="glassmorphism rounded-2xl p-8 border border-white/5 shadow-2xl flex flex-col w-full relative">
-          {children}
+
+        <p className="relative z-10 text-[12px] text-white/35">© {new Date().getFullYear()} Worklynk</p>
+      </aside>
+
+      {/* Form panel */}
+      <main className="flex flex-col px-5 py-8 sm:px-10">
+        <div className="flex items-center justify-between">
+          <Link
+            to="/"
+            className="group inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold text-[#57534E] transition-colors hover:bg-white hover:text-[#1C1917]"
+          >
+            <ArrowLeft size={15} className="transition-transform duration-200 group-hover:-translate-x-0.5" />
+            Back to home
+          </Link>
+
+          <Link to="/" className="flex items-center gap-2 lg:hidden" aria-label="Worklynk home">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#14110F] text-white">
+              <Shield size={15} />
+            </span>
+            <span className="font-display text-[16px] font-bold tracking-[-0.02em] text-[#1C1917]">Worklynk</span>
+          </Link>
         </div>
-      </div>
+
+        <div className="flex flex-1 items-center justify-center py-8">
+          <div className="w-full max-w-[420px] animate-fade-in">{children}</div>
+        </div>
+
+        <p className="text-center text-[11.5px] text-[#A8A29E]">
+          Protected by multi-factor authentication and audit logging.
+        </p>
+      </main>
     </div>
   );
 };

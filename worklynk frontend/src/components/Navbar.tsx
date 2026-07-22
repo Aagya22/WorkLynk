@@ -23,8 +23,10 @@ const PAGE_TITLES: Record<string, string> = {
   '/profile': 'My Profile',
   '/payslips': 'Payslips',
   '/leaves': 'Leave Requests',
+  '/calendar': 'Calendar',
   '/gdpr': 'GDPR Export',
   '/hr/dashboard': 'HR Dashboard',
+  '/hr/employees': 'Employee Directory',
   '/hr/leaves': 'Leave Decisions',
   '/hr/logs': 'Department Logs',
   '/admin/dashboard': 'Admin Dashboard',
@@ -35,9 +37,11 @@ const PAGE_TITLES: Record<string, string> = {
 const SEARCH_PAGES = [
   { name: 'Dashboard', path: '/dashboard', roles: ['employee', 'hr_manager', 'admin'] },
   { name: 'Payslips', path: '/payslips', roles: ['employee', 'hr_manager', 'admin'] },
-  { name: 'Leave Requests', path: '/leaves', roles: ['employee', 'hr_manager', 'admin'] },
+  { name: 'Leave Requests', path: '/leaves', roles: ['employee', 'hr_manager'] },
+  { name: 'Calendar', path: '/calendar', roles: ['employee', 'hr_manager', 'admin'] },
   { name: 'GDPR Export', path: '/gdpr', roles: ['employee', 'hr_manager', 'admin'] },
   { name: 'My Profile', path: '/profile', roles: ['employee', 'hr_manager', 'admin'] },
+  { name: 'Employee Directory', path: '/hr/employees', roles: ['hr_manager', 'admin'] },
   { name: 'Leave Decisions', path: '/hr/leaves', roles: ['hr_manager', 'admin'] },
   { name: 'Department Logs', path: '/hr/logs', roles: ['hr_manager'] },
   { name: 'Manage Users', path: '/admin/users', roles: ['admin'] },
@@ -52,7 +56,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, profile, setMobileOpen }) 
 
   const roleLabels: Record<string, string> = { employee: 'Employee', hr_manager: 'HR Manager', admin: 'Administrator' };
 
-  // --- Global quick search ---
+  // Global quick search
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -63,7 +67,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, profile, setMobileOpen }) 
     setSearchOpen(false);
   };
 
-  // --- Notifications ---
+  // Notifications
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -148,7 +152,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, profile, setMobileOpen }) 
 
   return (
     <header className="app-navbar flex items-center gap-4 px-4 py-3 md:px-8">
-      {/* Left: menu (mobile) + page title */}
+      {/* Left */}
       <div className="flex flex-shrink-0 items-center gap-3">
         <button onClick={() => setMobileOpen(true)} aria-label="Open menu" className="text-slate-500 hover:text-slate-800 md:hidden">
           <Menu size={22} />
@@ -156,9 +160,9 @@ export const Navbar: React.FC<NavbarProps> = ({ user, profile, setMobileOpen }) 
         <h1 className="font-display text-lg font-bold text-slate-900">{pageTitle}</h1>
       </div>
 
-      {/* Center: global quick search */}
+      {/* Search */}
       <div ref={searchRef} className="relative ml-2 hidden max-w-sm flex-1 md:block">
-        <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
           value={query}
@@ -173,10 +177,10 @@ export const Navbar: React.FC<NavbarProps> = ({ user, profile, setMobileOpen }) 
           }}
           placeholder="Search pages…"
           aria-label="Search pages"
-          className="w-full rounded-xl border border-black/[0.07] bg-black/[0.03] py-2 pl-9 pr-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#10367D]/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10367D]/10"
+          className="w-full rounded-full border border-black/[0.06] bg-black/[0.035] py-2.5 pl-11 pr-4 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[#10367D]/30 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#10367D]/10"
         />
         {searchOpen && query && (
-          <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-black/[0.06] bg-white shadow-xl">
+          <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-xl">
             {results.length === 0 ? (
               <p className="px-4 py-3 text-xs text-slate-500">No pages match "{query}".</p>
             ) : (
@@ -195,7 +199,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, profile, setMobileOpen }) 
         )}
       </div>
 
-      {/* Right: notifications + profile (single navbar surface) */}
+      {/* Right */}
       <div className="ml-auto flex items-center gap-1.5">
         {/* Notifications */}
         <div className="relative" ref={dropdownRef}>
@@ -258,7 +262,6 @@ export const Navbar: React.FC<NavbarProps> = ({ user, profile, setMobileOpen }) 
           )}
         </div>
 
-        {/* Profile chip — integrated into navbar surface */}
         <Link
           to="/profile"
           className="flex items-center gap-2.5 rounded-xl py-1.5 pl-1.5 pr-2.5 transition-colors hover:bg-black/[0.05]"

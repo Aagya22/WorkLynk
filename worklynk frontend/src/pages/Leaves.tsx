@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
-import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Table } from '../components/Table';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { Input } from '../components/Input';
+import { StatTile } from '../components/Bento';
 import { Plus, CalendarDays, Clock3, CheckCircle2, XCircle } from 'lucide-react';
 
 interface LeaveRequest {
@@ -121,10 +121,10 @@ export const Leaves: React.FC = () => {
   };
 
   const statusColors = {
-    pending: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    approved: 'text-green-400 bg-green-500/10 border-green-500/20',
-    rejected: 'text-red-400 bg-red-500/10 border-red-500/20',
-    cancelled: 'text-slate-400 bg-slate-500/10 border-slate-500/20'
+    pending: 'text-amber-800 bg-amber-50 border-amber-200',
+    approved: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+    rejected: 'text-red-700 bg-red-50 border-red-200',
+    cancelled: 'ink-muted bg-[#F2F1ED] hairline'
   };
 
   const columns = [
@@ -135,7 +135,7 @@ export const Leaves: React.FC = () => {
     {
       header: 'Type',
       accessor: (row: LeaveRequest) => (
-        <span className="capitalize font-medium text-slate-300">{(row as any).leaveType || row.type}</span>
+        <span className="capitalize font-medium ink-muted">{(row as any).leaveType || row.type}</span>
       )
     },
     {
@@ -149,7 +149,7 @@ export const Leaves: React.FC = () => {
     {
       header: 'Reason',
       accessor: (row: LeaveRequest) => (
-        <span className="text-slate-400 max-w-xs truncate block" title={row.reason}>
+        <span className="ink-muted max-w-xs truncate block" title={row.reason}>
           {row.reason}
         </span>
       )
@@ -176,7 +176,7 @@ export const Leaves: React.FC = () => {
             </Button>
           )}
           {row.decisionComment && (
-            <span className="text-xs text-slate-500 italic" title={row.decisionComment}>
+            <span className="text-xs ink-subtle italic" title={row.decisionComment}>
               Comment: {row.decisionComment}
             </span>
           )}
@@ -185,68 +185,44 @@ export const Leaves: React.FC = () => {
     }
   ];
 
-  const summary = [
-    { label: 'Total Requests', value: leaves.length, icon: CalendarDays, color: '#4F8CFF' },
-    { label: 'Pending', value: leaves.filter((l) => l.status === 'pending').length, icon: Clock3, color: '#F59E0B' },
-    { label: 'Approved', value: leaves.filter((l) => l.status === 'approved').length, icon: CheckCircle2, color: '#22C55E' },
-    { label: 'Rejected', value: leaves.filter((l) => l.status === 'rejected').length, icon: XCircle, color: '#EF4444' },
+  const summary: Array<{ label: string; value: number; icon: any; tone: 'info' | 'positive' | 'warning' | 'critical' }> = [
+    { label: 'Total requests', value: leaves.length, icon: CalendarDays, tone: 'info' },
+    { label: 'Pending', value: leaves.filter((l) => l.status === 'pending').length, icon: Clock3, tone: 'warning' },
+    { label: 'Approved', value: leaves.filter((l) => l.status === 'approved').length, icon: CheckCircle2, tone: 'positive' },
+    { label: 'Rejected', value: leaves.filter((l) => l.status === 'rejected').length, icon: XCircle, tone: 'critical' },
   ];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-7">
-        <div className="animate-slide-up flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-accent-500/20 bg-accent-500/10 text-accent-400 shadow-glow">
-              <CalendarDays size={22} />
-            </div>
-            <div>
-              <h1 className="font-display text-3xl font-bold tracking-tight text-slate-100">Leave Requests</h1>
-              <p className="text-sm font-medium text-slate-400">
-                Submit requests, track approvals, and keep an eye on your balance.
-              </p>
-            </div>
-          </div>
-          <Button variant="primary" onClick={() => setIsRequestModalOpen(true)}>
-            <span className="flex items-center gap-2">
-              <Plus size={16} />
-              Request Leave
-            </span>
-          </Button>
-        </div>
-
         {!loading && !error && (
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
             {summary.map((s, i) => {
               const Icon = s.icon;
               return (
-                <div
-                  key={s.label}
-                  className={`animate-slide-up stagger-${i + 1} group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D1326] p-4 transition-all duration-300 hover:-translate-y-1`}
-                >
-                  <div className="absolute inset-x-0 top-0 h-[3px]" style={{ background: s.color }} />
-                  <div className="flex items-center justify-between">
-                    <span className="text-3xl font-extrabold tracking-tight text-[#F8FAFC]">{s.value}</span>
-                    <div
-                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 transition-transform duration-300 group-hover:scale-110"
-                      style={{ background: `${s.color}1A`, color: s.color }}
-                    >
-                      <Icon size={17} />
-                    </div>
-                  </div>
-                  <span className="mt-1 block text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                    {s.label}
-                  </span>
+                <div key={s.label} className={`animate-slide-up stagger-${i + 1}`}>
+                  <StatTile label={s.label} value={s.value} tone={s.tone} icon={<Icon size={16} />} />
                 </div>
               );
             })}
           </div>
         )}
 
+        {!loading && !error && (
+          <div className="flex justify-end">
+            <button
+              onClick={() => setIsRequestModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#1C1917] px-4 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-[#2B2724]"
+            >
+              <Plus size={15} /> Request leave
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <div className="py-20 flex justify-center items-center">
-            <div className="flex items-center space-x-3 text-slate-400 font-semibold text-sm">
-              <svg className="animate-spin h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <div className="flex items-center space-x-3 ink-muted font-semibold text-sm">
+              <svg className="animate-spin h-5 w-5 ink-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
@@ -254,29 +230,29 @@ export const Leaves: React.FC = () => {
             </div>
           </div>
         ) : error ? (
-          <div className="p-6 bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-semibold rounded-xl text-center">
+          <div className="p-6 bg-red-50 border border-red-200 text-red-700 text-sm font-semibold rounded-xl text-center">
             {error}
           </div>
         ) : leaves.length === 0 ? (
-          <div className="animate-fade-in flex flex-col items-center space-y-4 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-14 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-accent-500/20 bg-accent-500/10 text-accent-400">
-              <CalendarDays size={28} />
+          <div className="paper animate-fade-in flex flex-col items-center space-y-4 rounded-2xl p-16 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F2F1ED]">
+              <CalendarDays size={24} className="ink-muted" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-bold text-slate-200">No leave requests yet</p>
-              <p className="mx-auto max-w-sm text-xs text-slate-500">
+              <p className="text-[15px] font-bold ink">No leave requests yet</p>
+              <p className="mx-auto max-w-sm text-[13px] ink-muted">
                 Need some rest? Submit your first application and track its approval right here.
               </p>
             </div>
-            <Button variant="primary" onClick={() => setIsRequestModalOpen(true)}>
-              <span className="flex items-center gap-2">
-                <Plus size={16} />
-                Request Leave
-              </span>
-            </Button>
+            <button
+              onClick={() => setIsRequestModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#1C1917] px-4 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-[#2B2724]"
+            >
+              <Plus size={15} /> Request leave
+            </button>
           </div>
         ) : (
-          <div className="animate-slide-up stagger-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D1326] shadow-xl">
+          <div className="paper paper-hover animate-slide-up stagger-4 overflow-hidden rounded-2xl">
             <Table data={leaves} columns={columns} />
           </div>
         )}
@@ -289,13 +265,13 @@ export const Leaves: React.FC = () => {
         >
           <form onSubmit={handleRequestLeave} className="space-y-4">
             {requestError && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl text-center">
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-center">
                 {requestError}
               </div>
             )}
 
             {requestSuccess && (
-              <div className="p-3 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold rounded-xl text-center">
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl text-center">
                 {requestSuccess}
               </div>
             )}
@@ -323,24 +299,24 @@ export const Leaves: React.FC = () => {
             </div>
 
             <div className="flex flex-col space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <label className="text-xs font-semibold uppercase tracking-wider ink-subtle">
                 Leave Type
               </label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
                 disabled={submitting}
-                className="w-full px-4 py-2.5 bg-slate-950/40 border border-slate-900/60 focus:border-primary-500/50 text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary-500/50"
+                className="w-full px-4 py-2.5 bg-[#F7F6F3] border hairline focus:border-[rgba(28,25,23,0.25)] ink rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[rgba(28,25,23,0.10)]"
               >
-                <option value="annual" className="bg-slate-950 text-slate-200">Annual Leave (Vacation)</option>
-                <option value="sick" className="bg-slate-950 text-slate-200">Sick Leave</option>
-                <option value="emergency" className="bg-slate-950 text-slate-200">Emergency Leave</option>
-                <option value="unpaid" className="bg-slate-950 text-slate-200">Unpaid Leave</option>
+                <option value="annual" className="bg-[#F7F6F3] ink">Annual Leave (Vacation)</option>
+                <option value="sick" className="bg-[#F7F6F3] ink">Sick Leave</option>
+                <option value="emergency" className="bg-[#F7F6F3] ink">Emergency Leave</option>
+                <option value="unpaid" className="bg-[#F7F6F3] ink">Unpaid Leave</option>
               </select>
             </div>
 
             <div className="flex flex-col space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <label className="text-xs font-semibold uppercase tracking-wider ink-subtle">
                 Reason / Details
               </label>
               <textarea
@@ -350,11 +326,11 @@ export const Leaves: React.FC = () => {
                 disabled={submitting}
                 rows={3}
                 placeholder="Please describe the reason for your leave request..."
-                className="w-full px-4 py-2.5 bg-slate-950/40 border border-slate-900/60 focus:border-primary-500/50 text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary-500/50 placeholder-slate-600"
+                className="w-full px-4 py-2.5 bg-[#F7F6F3] border hairline focus:border-[rgba(28,25,23,0.25)] ink rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[rgba(28,25,23,0.10)] placeholder-[#A8A29E]"
               />
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-900">
+            <div className="flex justify-end space-x-3 pt-4 border-t hairline">
               <Button
                 variant="secondary"
                 type="button"
@@ -370,6 +346,6 @@ export const Leaves: React.FC = () => {
           </form>
         </Modal>
       </div>
-    </DashboardLayout>
+    </>
   );
 };

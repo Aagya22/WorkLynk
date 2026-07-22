@@ -22,12 +22,24 @@ const sanitizeInput = (text: string): string => {
 const sanitizeProfileResponse = (profile: any, role: string, isOwner: boolean = false) => {
   const profileObj = profile.toObject ? profile.toObject() : { ...profile };
 
-  // Employees may see salary/bank details on their own profile, but never on someone else's.
+  // Employees see salary/bank only on their own profile.
   if (role === 'employee' && !isOwner) {
     delete profileObj.salary;
     delete profileObj.bankAccount;
   }
   return profileObj;
+};
+
+// Requires a name and a phone-like number.
+const EMERGENCY_CONTACT_HINT =
+  'Emergency contact must include a name and a contact number, e.g. "Jane Smith, Sister, +44 7700 900123".';
+const isValidEmergencyContact = (text: unknown): boolean => {
+  if (typeof text !== 'string') return false;
+  const t = sanitizeInput(text);
+  if (t.length < 6) return false;
+  const hasName = /[A-Za-z]{2,}/.test(t);
+  const digitCount = (t.match(/\d/g) || []).length;
+  return hasName && digitCount >= 7;
 };
 
 // Soft duplicate check
@@ -73,6 +85,10 @@ export const createProfile = async (req: AuthenticatedRequest, res: Response) =>
 
     if (await isPhoneNumberTaken(phoneNumber, userId)) {
       return res.status(400).json({ message: 'This phone number is already in use by another account.' });
+    }
+
+    if (!isValidEmergencyContact(emergencyContact)) {
+      return res.status(400).json({ message: EMERGENCY_CONTACT_HINT });
     }
 
     // Input sanitization to prevent XSS
@@ -132,7 +148,11 @@ export const initializeMyProfile = async (req: AuthenticatedRequest, res: Respon
       return res.status(400).json({ message: 'This phone number is already in use by another account.' });
     }
 
-    // Employees provide their own contact details; HR-managed fields start as placeholders.
+    if (!isValidEmergencyContact(emergencyContact)) {
+      return res.status(400).json({ message: EMERGENCY_CONTACT_HINT });
+    }
+
+    // HR-managed fields start as placeholders.
     const profile = await Profile.create({
       userId: req.user!._id,
       fullName: sanitizeInput(fullName),
@@ -233,7 +253,11 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
       return res.status(403).json({ message: 'Access denied: You cannot modify this profile.' });
     }
 
-    // Reject a phone number already registered to a different profile (only when it changes).
+    if (req.body.emergencyContact !== undefined && !isValidEmergencyContact(req.body.emergencyContact)) {
+      return res.status(400).json({ message: EMERGENCY_CONTACT_HINT });
+    }
+
+    // Reject a phone number already used by another profile.
     if (req.body.phoneNumber !== undefined && sanitizeInput(req.body.phoneNumber) !== profile.phoneNumber) {
       if (await isPhoneNumberTaken(req.body.phoneNumber, profile.userId)) {
         return res.status(400).json({ message: 'This phone number is already in use by another account.' });
@@ -507,7 +531,7 @@ export const exportEmployeeData = async (req: AuthenticatedRequest, res: Respons
     const isOwner = req.user!._id.toString() === targetUser._id.toString();
     const isAdmin = req.user!.role === 'admin';
 
-    // Access control: owner (Employee/HR/Admin exporting themselves) or Admin with consent token
+    // Owner, or admin with a consent token.
     if (!isOwner) {
       if (!isAdmin) {
         return res.status(403).json({ message: 'Access denied: Unauthorized export attempt.' });

@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { PasswordStrength } from '../components/PasswordStrength';
+import { PROFILE_UPDATED_EVENT } from '../layouts/DashboardLayout';
 import { UserCog, Camera, Mail, CalendarDays, ShieldCheck, KeyRound, CheckCircle2, Lock, Clock, LogOut } from 'lucide-react';
 
 interface ProfileData {
@@ -103,7 +103,6 @@ export const Profile: React.FC = () => {
     try {
       await api.put('/api/auth/change-password', { currentPassword: curPw, newPassword: newPw });
       setPwSuccess('Password changed successfully. Please log in again.');
-      // The server invalidated this session — send the user back to login.
       setTimeout(() => {
         updateUser(null);
         navigate('/login');
@@ -162,6 +161,7 @@ export const Profile: React.FC = () => {
         setPreviewUrl(null);
       }
       setSelectedFile(null);
+      window.dispatchEvent(new Event(PROFILE_UPDATED_EVENT));
     } catch (err: any) {
       setUploadError(err.response?.data?.message || 'Failed to remove photo.');
     } finally {
@@ -200,7 +200,6 @@ export const Profile: React.FC = () => {
       }
     } catch (err: any) {
       if (err.response?.status === 404) {
-        // No profile yet (typical for self-registered accounts) — offer onboarding.
         setProfileMissing(true);
       } else {
         setError(err.response?.data?.message || 'Failed to load profile details.');
@@ -346,6 +345,7 @@ export const Profile: React.FC = () => {
 
       setUploadSuccess('Profile photo uploaded.');
       setSelectedFile(null);
+      window.dispatchEvent(new Event(PROFILE_UPDATED_EVENT));
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
         setPreviewUrl(null);
@@ -420,7 +420,7 @@ export const Profile: React.FC = () => {
   const roleLabel = roleLabels[user?.role || 'employee'];
   const joinedDate = profile?.employmentStartDate
     ? new Date(profile.employmentStartDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
-    : '—';
+    : '-';
 
   const lastLoginText = user?.previousLogin
     ? `${new Date(user.previousLogin).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · ${user.previousLoginIP || 'unknown IP'}`
@@ -430,27 +430,22 @@ export const Profile: React.FC = () => {
 
   const ReadOnlyField = ({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) => (
     <div className="flex flex-col space-y-1.5">
-      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</label>
-      <div className={`rounded-xl border border-white/[0.06] bg-slate-950/40 px-4 py-2.5 text-sm text-slate-400 ${mono ? 'font-mono' : ''}`}>
+      <label className="text-xs font-semibold uppercase tracking-wider ink-subtle">{label}</label>
+      <div className={`rounded-xl border hairline bg-[#F7F6F3] px-4 py-2.5 text-sm ink-muted ${mono ? 'font-mono' : ''}`}>
         {value}
       </div>
     </div>
   );
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-7">
-        <div className="animate-slide-up">
-          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-100">My Profile</h1>
-          <p className="text-sm font-medium text-slate-400">
-            Manage your personal information, security, and profile photo.
-          </p>
-        </div>
+
 
         {loading ? (
           <div className="py-20 flex justify-center items-center">
-            <div className="flex items-center space-x-3 text-slate-400 font-semibold text-sm">
-              <svg className="animate-spin h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <div className="flex items-center space-x-3 ink-muted font-semibold text-sm">
+              <svg className="animate-spin h-5 w-5 ink-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
@@ -458,14 +453,14 @@ export const Profile: React.FC = () => {
             </div>
           </div>
         ) : profileMissing ? (
-          <div className="animate-slide-up mx-auto max-w-2xl rounded-2xl border border-white/[0.08] bg-[#0D1326] p-7 shadow-xl">
-            <div className="mb-5 flex items-start gap-4 border-b border-white/[0.06] pb-5">
-              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-accent-500/20 bg-accent-500/10 text-accent-400">
+          <div className="animate-slide-up mx-auto max-w-2xl paper paper-hover rounded-2xl p-7">
+            <div className="mb-5 flex items-start gap-4 border-b hairline pb-5">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border hairline bg-[#F2F1ED] ink">
                 <UserCog size={20} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-100">Finish setting up your profile</h3>
-                <p className="mt-0.5 text-xs text-slate-400">
+                <h3 className="text-lg font-bold ink">Finish setting up your profile</h3>
+                <p className="mt-0.5 text-xs ink-muted">
                   Welcome! Add your details below to activate your profile. Your job title, salary, and
                   bank details will be assigned by HR.
                 </p>
@@ -474,7 +469,7 @@ export const Profile: React.FC = () => {
 
             <form onSubmit={handleInitProfile} className="space-y-5">
               {obError && (
-                <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center text-xs font-semibold text-red-400">
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center text-xs font-semibold text-red-700">
                   {obError}
                 </div>
               )}
@@ -513,7 +508,8 @@ export const Profile: React.FC = () => {
                   id="ob-emergency"
                   label="Emergency Contact"
                   type="text"
-                  placeholder="Name, Relationship, Phone"
+                  placeholder="Jane Smith, Sister, +44 7700 900123"
+                  helperText="Include a name and a contact number."
                   value={obEmergency}
                   onChange={(e) => setObEmergency(e.target.value)}
                   required
@@ -521,7 +517,7 @@ export const Profile: React.FC = () => {
                 />
               </div>
 
-              <div className="flex justify-end border-t border-white/[0.06] pt-4">
+              <div className="flex justify-end border-t hairline pt-4">
                 <Button type="submit" variant="primary" loading={obSubmitting}>
                   Complete Setup
                 </Button>
@@ -529,17 +525,17 @@ export const Profile: React.FC = () => {
             </form>
           </div>
         ) : !profile ? (
-          <div className="p-6 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-semibold rounded-xl text-center">
+          <div className="p-6 bg-amber-50 border border-amber-200 text-amber-800 text-sm font-semibold rounded-xl text-center">
             {error || 'No profile records found. Please contact an HR administrator to initialize your profile.'}
           </div>
         ) : (
           <div className="space-y-6">
             {/* Profile summary */}
-            <div className="animate-slide-up flex flex-col gap-5 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl sm:flex-row sm:items-center">
+            <div className="animate-slide-up flex flex-col gap-5 paper paper-hover rounded-2xl p-6 sm:flex-row sm:items-center">
               {/* Avatar with upload overlay */}
               <div className="mx-auto flex flex-col items-center gap-2 sm:mx-0">
                 <div className="group relative">
-                  <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
+                  <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border hairline bg-[#F2F1ED]">
                     {previewUrl ? (
                       <img src={previewUrl} alt="Preview" className="h-full w-full object-cover" />
                     ) : profile.profilePhotoPath ? (
@@ -551,12 +547,12 @@ export const Profile: React.FC = () => {
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
                     ) : (
-                      <span className="text-3xl font-bold uppercase text-accent-500">{profile.fullName?.charAt(0) || 'U'}</span>
+                      <span className="text-3xl font-bold uppercase ink">{profile.fullName?.charAt(0) || 'U'}</span>
                     )}
                   </div>
                   <label
                     htmlFor="photo-file"
-                    className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-2xl bg-slate-950/60 opacity-0 transition-opacity group-hover:opacity-100"
+                    className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-2xl bg-[#F7F6F3] opacity-0 transition-opacity group-hover:opacity-100"
                     title="Change photo"
                   >
                     <Camera size={20} className="text-white" />
@@ -568,7 +564,7 @@ export const Profile: React.FC = () => {
                     type="button"
                     onClick={handleRemovePhoto}
                     disabled={removingPhoto}
-                    className="text-[11px] font-semibold text-slate-500 transition-colors hover:text-red-400 disabled:opacity-50"
+                    className="text-[11px] font-semibold ink-subtle transition-colors hover:text-red-700 disabled:opacity-50"
                   >
                     Remove photo
                   </button>
@@ -577,16 +573,16 @@ export const Profile: React.FC = () => {
 
               {/* Identity */}
               <div className="flex-1 text-center sm:text-left">
-                <h2 className="font-display text-2xl font-bold text-slate-100">{profile.fullName}</h2>
-                <p className="mt-0.5 text-sm font-medium text-slate-400">{profile.jobTitle}</p>
+                <h2 className="font-display text-2xl font-bold ink">{profile.fullName}</h2>
+                <p className="mt-0.5 text-sm font-medium ink-muted">{profile.jobTitle}</p>
                 <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-slate-900 px-3 py-1 text-[11px] font-semibold text-slate-400">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border hairline bg-[#F7F6F3] px-3 py-1 text-[11px] font-semibold ink-muted">
                     <Mail size={12} /> {user?.email}
                   </span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-500/20 bg-accent-500/10 px-3 py-1 text-[11px] font-bold text-accent-400">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border hairline bg-[#F2F1ED] px-3 py-1 text-[11px] font-bold ink">
                     {roleLabel}
                   </span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-slate-900 px-3 py-1 text-[11px] font-semibold text-slate-400">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border hairline bg-[#F7F6F3] px-3 py-1 text-[11px] font-semibold ink-muted">
                     <CalendarDays size={12} /> Joined {joinedDate}
                   </span>
                 </div>
@@ -602,8 +598,8 @@ export const Profile: React.FC = () => {
 
             {/* Photo apply bar */}
             {selectedFile && (
-              <form onSubmit={handlePhotoUpload} className="animate-fade-in flex flex-col gap-3 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
-                <span className="truncate text-xs text-slate-400">Selected photo: <span className="font-semibold text-slate-200">{selectedFile.name}</span> · max 2MB</span>
+              <form onSubmit={handlePhotoUpload} className="animate-fade-in flex flex-col gap-3 paper paper-hover rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between">
+                <span className="truncate text-xs ink-muted">Selected photo: <span className="font-semibold ink">{selectedFile.name}</span> · max 2MB</span>
                 <div className="flex gap-2">
                   <Button type="button" variant="secondary" onClick={handleCancelSelection} disabled={uploading}>Cancel</Button>
                   <Button type="submit" variant="primary" loading={uploading}>Upload Photo</Button>
@@ -611,35 +607,35 @@ export const Profile: React.FC = () => {
               </form>
             )}
             {uploadError && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs font-semibold text-red-400">{uploadError}</div>
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">{uploadError}</div>
             )}
             {uploadSuccess && !selectedFile && (
-              <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-3 text-xs font-semibold text-green-400">{uploadSuccess}</div>
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-700">{uploadSuccess}</div>
             )}
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
               {/* Security column */}
               <div className="space-y-6 lg:order-2">
                 {/* MFA Card */}
-              <div className="animate-slide-up stagger-2 space-y-4 rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl">
+              <div className="animate-slide-up stagger-2 space-y-4 paper paper-hover rounded-2xl p-6">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-primary-500/10 border border-primary-500/20 rounded-lg text-primary-400">
+                  <div className="p-2 bg-[#F2F1ED] border hairline rounded-lg ink">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                   </div>
-                  <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wider">Multi-Factor Auth (MFA)</h4>
+                  <h4 className="text-sm font-bold ink uppercase tracking-wider">Multi-Factor Auth (MFA)</h4>
                 </div>
 
                 {user?.mfaEnabled ? (
                   <div className="space-y-3">
-                    <div className="p-3.5 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center space-x-3 text-green-400 text-xs font-bold">
+                    <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-3 text-emerald-700 text-xs font-bold">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                       <span>MFA is currently active on your account</span>
                     </div>
-                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                    <p className="text-[11px] ink-subtle leading-relaxed">
                       Your identity is secured. Next logins will request a 6-digit verification code from your TOTP authenticator device.
                     </p>
                     <Button
@@ -653,12 +649,12 @@ export const Profile: React.FC = () => {
                 ) : isSettingUpMfa ? (
                   <form onSubmit={handleVerifyMfa} className="space-y-4">
                     {mfaError && (
-                      <div className="p-2.5 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl">
+                      <div className="p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl">
                         {mfaError}
                       </div>
                     )}
                     {mfaSuccess && (
-                      <div className="p-2.5 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold rounded-xl">
+                      <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl">
                         {mfaSuccess}
                       </div>
                     )}
@@ -668,8 +664,8 @@ export const Profile: React.FC = () => {
                     </div>
 
                     <div className="space-y-1">
-                      <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Secret Key</span>
-                      <code className="text-xs font-mono font-bold text-slate-300 block bg-slate-950 p-2 rounded-lg text-center break-all select-all">
+                      <span className="text-[10px] ink-subtle font-bold uppercase tracking-wider block">Secret Key</span>
+                      <code className="text-xs font-mono font-bold ink-muted block bg-[#F7F6F3] p-2 rounded-lg text-center break-all select-all">
                         {mfaSecret}
                       </code>
                     </div>
@@ -707,11 +703,11 @@ export const Profile: React.FC = () => {
                   </form>
                 ) : (
                   <div className="space-y-3">
-                    <p className="text-xs text-slate-400 leading-relaxed font-sans">
+                    <p className="text-xs ink-muted leading-relaxed font-sans">
                       Add a secondary layer of protection to secure your personal data records against unauthorized login attempts.
                     </p>
                     {mfaError && (
-                      <div className="p-2.5 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl">
+                      <div className="p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl">
                         {mfaError}
                       </div>
                     )}
@@ -728,54 +724,54 @@ export const Profile: React.FC = () => {
               </div>
 
               {/* Account facts */}
-              <div className="animate-slide-up rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl">
-                <h3 className="mb-4 border-b border-white/[0.06] pb-4 text-base font-bold text-slate-100">Account</h3>
+              <div className="animate-slide-up paper paper-hover rounded-2xl p-6">
+                <h3 className="mb-4 border-b hairline pb-4 text-base font-bold ink">Account</h3>
                 <div className="space-y-3.5 text-sm">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="flex items-center gap-2 text-slate-500"><Mail size={14} /> Email</span>
-                    <span className="truncate font-medium text-slate-200">{user?.email}</span>
+                    <span className="flex items-center gap-2 ink-subtle"><Mail size={14} /> Email</span>
+                    <span className="truncate font-medium ink">{user?.email}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <span className="flex items-center gap-2 text-slate-500"><KeyRound size={14} /> Role</span>
-                    <span className="font-medium text-slate-200">{roleLabel}</span>
+                    <span className="flex items-center gap-2 ink-subtle"><KeyRound size={14} /> Role</span>
+                    <span className="font-medium ink">{roleLabel}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <span className="flex items-center gap-2 text-slate-500"><ShieldCheck size={14} /> 2FA Status</span>
-                    <span className={`flex items-center gap-1.5 font-semibold ${user?.mfaEnabled ? 'text-green-400' : 'text-slate-400'}`}>
+                    <span className="flex items-center gap-2 ink-subtle"><ShieldCheck size={14} /> 2FA Status</span>
+                    <span className={`flex items-center gap-1.5 font-semibold ${user?.mfaEnabled ? 'text-emerald-700' : 'ink-muted'}`}>
                       {user?.mfaEnabled ? (<><CheckCircle2 size={13} /> Active</>) : 'Disabled'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <span className="flex flex-shrink-0 items-center gap-2 text-slate-500"><Clock size={14} /> Last login</span>
-                    <span className="truncate text-right font-medium text-slate-300" title={lastLoginText}>{lastLoginText}</span>
+                    <span className="flex flex-shrink-0 items-center gap-2 ink-subtle"><Clock size={14} /> Last login</span>
+                    <span className="truncate text-right font-medium ink-muted" title={lastLoginText}>{lastLoginText}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <span className="flex items-center gap-2 text-slate-500"><KeyRound size={14} /> Password</span>
+                    <span className="flex items-center gap-2 ink-subtle"><KeyRound size={14} /> Password</span>
                     {pwDaysLeft === null ? (
-                      <span className="font-medium text-slate-300">—</span>
+                      <span className="font-medium ink-muted">-</span>
                     ) : pwDaysLeft <= 0 ? (
-                      <span className="font-semibold text-red-400">Expired</span>
+                      <span className="font-semibold text-red-700">Expired</span>
                     ) : (
-                      <span className={`font-semibold ${pwDaysLeft <= 14 ? 'text-amber-400' : 'text-slate-300'}`}>Expires in {pwDaysLeft}d</span>
+                      <span className={`font-semibold ${pwDaysLeft <= 14 ? 'text-amber-800' : 'ink-muted'}`}>Expires in {pwDaysLeft}d</span>
                     )}
                   </div>
                 </div>
                 <div className="mt-5 space-y-2">
                   <button
                     onClick={() => { setPwError(''); setPwSuccess(''); setCurPw(''); setNewPw(''); setConfPw(''); setPwOpen(true); }}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-slate-900/40 py-2.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-slate-900/70 hover:text-slate-100"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border hairline bg-[#FBFAF8] py-2.5 text-xs font-semibold ink-muted transition-colors hover:bg-[#F2F1ED] hover:ink"
                   >
                     <Lock size={14} /> Change Password
                   </button>
                   <button
                     onClick={() => { setEmailError(''); setNewEmail(''); setEmailPw(''); setEmailOpen(true); }}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-slate-900/40 py-2.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-slate-900/70 hover:text-slate-100"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border hairline bg-[#FBFAF8] py-2.5 text-xs font-semibold ink-muted transition-colors hover:bg-[#F2F1ED] hover:ink"
                   >
                     <Mail size={14} /> Change Email
                   </button>
                   <button
                     onClick={() => { setSoError(''); setSoPw(''); setSoMfa(''); setSoOpen(true); }}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-slate-900/40 py-2.5 text-xs font-semibold text-slate-300 transition-colors hover:bg-slate-900/70 hover:text-slate-100"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border hairline bg-[#FBFAF8] py-2.5 text-xs font-semibold ink-muted transition-colors hover:bg-[#F2F1ED] hover:ink"
                   >
                     <LogOut size={14} /> Sign out other devices
                   </button>
@@ -785,20 +781,20 @@ export const Profile: React.FC = () => {
 
             {/* Personal information (main) */}
             <div className="space-y-6 lg:order-1 lg:col-span-2">
-              <div className="animate-slide-up rounded-2xl border border-white/[0.08] bg-[#0D1326] p-6 shadow-xl">
+              <div className="animate-slide-up paper paper-hover rounded-2xl p-6">
                 <form onSubmit={handleUpdateProfile} className="space-y-6">
-                  <h3 className="border-b border-white/[0.06] pb-4 text-base font-bold text-slate-100">
+                  <h3 className="border-b hairline pb-4 text-base font-bold ink">
                     Personal Information
                   </h3>
 
                   {error && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl text-center">
+                    <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-center">
                       {error}
                     </div>
                   )}
 
                   {success && (
-                    <div className="p-3 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold rounded-xl text-center">
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl text-center">
                       {success}
                     </div>
                   )}
@@ -843,7 +839,8 @@ export const Profile: React.FC = () => {
                       id="emergency-contact"
                       label="Emergency Contact"
                       type="text"
-                      placeholder="Name, Relationship, Phone"
+                      placeholder="Jane Smith, Sister, +44 7700 900123"
+                      helperText={isEditing ? 'Include a name and a contact number.' : undefined}
                       value={emergencyContact}
                       onChange={(e) => setEmergencyContact(e.target.value)}
                       required
@@ -851,12 +848,11 @@ export const Profile: React.FC = () => {
                     />
                   </div>
 
-                  {/* Compensation is returned by the API only for the profile owner and HR/admin. */}
                   {user?.role !== 'admin' && (profile.salary || profile.bankAccount) && (
-                    <div className="space-y-5 border-t border-white/[0.06] pt-6">
+                    <div className="space-y-5 border-t hairline pt-6">
                       <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-bold text-slate-200">Compensation &amp; Banking</h4>
-                        <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold text-slate-500">Encrypted · HR managed</span>
+                        <h4 className="text-sm font-bold ink">Compensation &amp; Banking</h4>
+                        <span className="rounded-full bg-[#F2F1ED] px-2 py-0.5 text-[10px] font-semibold ink-subtle">Encrypted · HR managed</span>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <ReadOnlyField label="Salary" value={profile.salary ? `Rs. ${profile.salary}` : 'N/A'} mono />
@@ -866,7 +862,7 @@ export const Profile: React.FC = () => {
                   )}
 
                   {isEditing && (
-                    <div className="flex justify-end gap-3 border-t border-white/[0.06] pt-4">
+                    <div className="flex justify-end gap-3 border-t hairline pt-4">
                       <Button type="button" variant="secondary" onClick={handleCancelEdit} disabled={saving}>
                         Cancel
                       </Button>
@@ -886,16 +882,16 @@ export const Profile: React.FC = () => {
         <Modal isOpen={pwOpen} onClose={() => setPwOpen(false)} title="Change Password">
           <form onSubmit={handleChangePassword} className="space-y-4">
             {pwError && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center text-xs font-semibold text-red-400">{pwError}</div>
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center text-xs font-semibold text-red-700">{pwError}</div>
             )}
             {pwSuccess && (
-              <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-3 text-center text-xs font-semibold text-green-400">{pwSuccess}</div>
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center text-xs font-semibold text-emerald-700">{pwSuccess}</div>
             )}
             <Input id="cur-pw" label="Current Password" type="password" value={curPw} onChange={(e) => setCurPw(e.target.value)} required disabled={pwSubmitting} />
             <Input id="new-pw" label="New Password" type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} required disabled={pwSubmitting} />
             <PasswordStrength password={newPw} />
             <Input id="conf-pw" label="Confirm New Password" type="password" value={confPw} onChange={(e) => setConfPw(e.target.value)} required disabled={pwSubmitting} />
-            <div className="flex justify-end gap-3 border-t border-white/[0.06] pt-4">
+            <div className="flex justify-end gap-3 border-t hairline pt-4">
               <Button type="button" variant="secondary" onClick={() => setPwOpen(false)} disabled={pwSubmitting}>Cancel</Button>
               <Button type="submit" variant="primary" loading={pwSubmitting}>Update Password</Button>
             </div>
@@ -906,11 +902,11 @@ export const Profile: React.FC = () => {
         <Modal isOpen={disableOpen} onClose={() => setDisableOpen(false)} title="Disable Two-Factor Authentication">
           <form onSubmit={handleDisableMfa} className="space-y-4">
             {disableError && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center text-xs font-semibold text-red-400">{disableError}</div>
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center text-xs font-semibold text-red-700">{disableError}</div>
             )}
-            <p className="text-sm text-slate-400">Turning off two-factor authentication lowers your account security. Enter your password to confirm — you can re-enable it any time.</p>
+            <p className="text-sm ink-muted">Turning off two-factor authentication lowers your account security. Enter your password to confirm. You can re-enable it any time.</p>
             <Input id="disable-pw" label="Current Password" type="password" value={disablePw} onChange={(e) => setDisablePw(e.target.value)} required disabled={disabling} />
-            <div className="flex justify-end gap-3 border-t border-white/[0.06] pt-4">
+            <div className="flex justify-end gap-3 border-t hairline pt-4">
               <Button type="button" variant="secondary" onClick={() => setDisableOpen(false)} disabled={disabling}>Cancel</Button>
               <Button type="submit" variant="danger" loading={disabling}>Disable 2FA</Button>
             </div>
@@ -921,12 +917,12 @@ export const Profile: React.FC = () => {
         <Modal isOpen={emailOpen} onClose={() => setEmailOpen(false)} title="Change Email Address">
           <form onSubmit={handleChangeEmail} className="space-y-4">
             {emailError && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center text-xs font-semibold text-red-400">{emailError}</div>
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center text-xs font-semibold text-red-700">{emailError}</div>
             )}
-            <p className="text-sm text-slate-400">Your email is used to sign in. Enter a new address and confirm with your password.</p>
+            <p className="text-sm ink-muted">Your email is used to sign in. Enter a new address and confirm with your password.</p>
             <Input id="new-email" label="New Email" type="email" placeholder="you@example.com" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required disabled={emailSubmitting} />
             <Input id="email-pw" label="Current Password" type="password" value={emailPw} onChange={(e) => setEmailPw(e.target.value)} required disabled={emailSubmitting} />
-            <div className="flex justify-end gap-3 border-t border-white/[0.06] pt-4">
+            <div className="flex justify-end gap-3 border-t hairline pt-4">
               <Button type="button" variant="secondary" onClick={() => setEmailOpen(false)} disabled={emailSubmitting}>Cancel</Button>
               <Button type="submit" variant="primary" loading={emailSubmitting}>Update Email</Button>
             </div>
@@ -937,20 +933,20 @@ export const Profile: React.FC = () => {
         <Modal isOpen={soOpen} onClose={() => setSoOpen(false)} title="Sign Out Other Devices">
           <form onSubmit={handleSignOutSubmit} className="space-y-4">
             {soError && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center text-xs font-semibold text-red-400">{soError}</div>
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center text-xs font-semibold text-red-700">{soError}</div>
             )}
-            <p className="text-sm text-slate-400">This ends every other session. Your current device stays signed in. Confirm your identity to continue.</p>
+            <p className="text-sm ink-muted">This ends every other session. Your current device stays signed in. Confirm your identity to continue.</p>
             <Input id="so-pw" label="Current Password" type="password" value={soPw} onChange={(e) => setSoPw(e.target.value)} required disabled={signingOutOthers} />
             {user?.mfaEnabled && (
               <Input id="so-mfa" label="Authenticator Code" type="text" placeholder="e.g. 123456" value={soMfa} onChange={(e) => setSoMfa(e.target.value)} required disabled={signingOutOthers} />
             )}
-            <div className="flex justify-end gap-3 border-t border-white/[0.06] pt-4">
+            <div className="flex justify-end gap-3 border-t hairline pt-4">
               <Button type="button" variant="secondary" onClick={() => setSoOpen(false)} disabled={signingOutOthers}>Cancel</Button>
               <Button type="submit" variant="danger" loading={signingOutOthers}>Sign out other devices</Button>
             </div>
           </form>
         </Modal>
       </div>
-    </DashboardLayout>
+    </>
   );
 };

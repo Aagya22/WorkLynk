@@ -10,11 +10,11 @@ import { protect, restrictTo } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-// Self-service leave (submit/view/cancel own) — not for admin, a system role.
+// Self-service leave (not admin)
 router.post('/', protect, restrictTo('employee', 'hr_manager'), requestLeave);
 router.get('/me', protect, restrictTo('employee', 'hr_manager'), getMyLeaves);
 router.post('/:id/cancel', protect, restrictTo('employee', 'hr_manager'), cancelLeave);
-// Approval/oversight — HR and admin.
+// Approval / oversight
 router.get('/', protect, restrictTo('admin', 'hr_manager'), getAllLeaves);
 router.patch('/:id/decision', protect, restrictTo('admin', 'hr_manager'), decideLeave);
 

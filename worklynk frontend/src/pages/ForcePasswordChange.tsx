@@ -67,22 +67,22 @@ export const ForcePasswordChange: React.FC = () => {
     <AuthLayout>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="text-center space-y-1.5">
-          <h2 className="text-xl font-bold text-slate-100 uppercase tracking-wider">
+          <h2 className="font-display text-[28px] font-bold tracking-[-0.025em] text-[#1C1917]">
             Password Expired
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-[#57534E]">
             Your account password has expired (90-day security policy). You must update it to proceed.
           </p>
         </div>
 
         {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl text-center">
+          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-center">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="p-3 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold rounded-xl text-center animate-pulse">
+          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl text-center animate-pulse">
             {success}
           </div>
         )}

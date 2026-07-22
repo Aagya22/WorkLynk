@@ -4,6 +4,8 @@ import api from '../utils/api';
 import { Sidebar } from '../components/Sidebar';
 import { Navbar } from '../components/Navbar';
 
+export const PROFILE_UPDATED_EVENT = 'worklynk:profile-updated';
+
 export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -22,18 +24,16 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
       }
     };
     fetchLayoutProfile();
+
+    window.addEventListener(PROFILE_UPDATED_EVENT, fetchLayoutProfile);
+    return () => window.removeEventListener(PROFILE_UPDATED_EVENT, fetchLayoutProfile);
   }, [user]);
 
   return (
     <div
       data-theme="staff"
-      className="h-screen w-screen overflow-hidden bg-slate-950 flex relative text-slate-100 font-sans"
+      className="app-shell flex h-screen w-screen overflow-hidden font-sans text-slate-100"
     >
-      {/* Background glow spots */}
-      <div className="absolute top-[-30%] right-[-10%] w-[60%] h-[60%] bg-accent-500/5 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-[-30%] left-[-10%] w-[60%] h-[60%] bg-accent-600/[0.04] rounded-full blur-[150px] pointer-events-none" />
-
-      {/* Sidebar Component */}
       <Sidebar
         user={user}
         logout={logout}
@@ -41,18 +41,15 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
         setMobileOpen={setMobileOpen}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden z-10">
-        {/* Navbar Component */}
+      <div className="app-sheet flex min-w-0 flex-1 flex-col overflow-hidden">
         <Navbar
           user={user}
           profile={profile}
           setMobileOpen={setMobileOpen}
         />
 
-        {/* Dynamic Inner Page Content - Only this container scrolls */}
-        <main className="content-scope flex-1 overflow-y-auto p-6 md:p-8 w-full">
-          <div className="max-w-7xl mx-auto w-full pb-12">
+        <main className="content-scope flex-1 overflow-y-auto px-6 py-8 md:px-10">
+          <div className="mx-auto w-full max-w-[1180px] pb-14">
             {children}
           </div>
         </main>

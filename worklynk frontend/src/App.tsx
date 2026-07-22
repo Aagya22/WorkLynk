@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { AppLayout } from './layouts/AppLayout';
+import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { MfaVerify } from './pages/MfaVerify';
 import { ForcePasswordChange } from './pages/ForcePasswordChange';
@@ -9,6 +11,7 @@ import { Profile } from './pages/Profile';
 import { Payslips } from './pages/Payslips';
 import { Leaves } from './pages/Leaves';
 import { GDPR } from './pages/GDPR';
+import { CalendarPage } from './pages/CalendarPage';
 import { HrDashboard } from './pages/HrDashboard';
 import { HrEmployeeList } from './pages/HrEmployeeList';
 import { HrLeaveApprovals } from './pages/HrLeaveApprovals';
@@ -27,7 +30,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400 font-semibold">
+      <div className="min-h-screen bg-[#F7F6F3] flex items-center justify-center text-[#8A8580] font-semibold">
         Loading session status...
       </div>
     );
@@ -49,7 +52,7 @@ const RoleRoute: React.FC<{ children: React.ReactNode; allowedRoles: string[] }>
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400 font-semibold">
+      <div className="min-h-screen bg-[#F7F6F3] flex items-center justify-center text-[#8A8580] font-semibold">
         Loading session status...
       </div>
     );
@@ -72,7 +75,7 @@ const GuestRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400 font-semibold">
+      <div className="min-h-screen bg-[#F7F6F3] flex items-center justify-center text-[#8A8580] font-semibold">
         Loading session status...
       </div>
     );
@@ -125,103 +128,119 @@ export const App: React.FC = () => {
         <Route path="/verify-mfa" element={<MfaVerify />} />
         <Route path="/force-change-password" element={<ForcePasswordChange />} />
 
-        {/* Protected Employee Routes */}
+        {/* Shared persistent shell for signed-in routes */}
         <Route
-          path="/dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <AppLayout />
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/payslips"
-          element={
-            <RoleRoute allowedRoles={['employee', 'hr_manager']}>
-              <Payslips />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/leaves"
-          element={
-            <RoleRoute allowedRoles={['employee', 'hr_manager']}>
-              <Leaves />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/gdpr"
-          element={
-            <ProtectedRoute>
-              <GDPR />
-            </ProtectedRoute>
-          }
-        />
+        >
+          {/* Protected Employee Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payslips"
+            element={
+              <RoleRoute allowedRoles={['employee', 'hr_manager']}>
+                <Payslips />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/leaves"
+            element={
+              <RoleRoute allowedRoles={['employee', 'hr_manager']}>
+                <Leaves />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/calendar"
+            element={
+              <ProtectedRoute>
+                <CalendarPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/gdpr"
+            element={
+              <ProtectedRoute>
+                <GDPR />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Protected HR/Manager Routes */}
-        <Route
-          path="/hr/dashboard"
-          element={
-            <RoleRoute allowedRoles={['hr_manager', 'admin']}>
-              <HrDashboard />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/hr/employees"
-          element={
-            <RoleRoute allowedRoles={['hr_manager', 'admin']}>
-              <HrEmployeeList />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/hr/leaves"
-          element={
-            <RoleRoute allowedRoles={['hr_manager', 'admin']}>
-              <HrLeaveApprovals />
-            </RoleRoute>
-          }
-        />
+          {/* Protected HR/Manager Routes */}
+          <Route
+            path="/hr/dashboard"
+            element={
+              <RoleRoute allowedRoles={['hr_manager', 'admin']}>
+                <HrDashboard />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/hr/employees"
+            element={
+              <RoleRoute allowedRoles={['hr_manager', 'admin']}>
+                <HrEmployeeList />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/hr/leaves"
+            element={
+              <RoleRoute allowedRoles={['hr_manager', 'admin']}>
+                <HrLeaveApprovals />
+              </RoleRoute>
+            }
+          />
 
-        {/* Protected Admin Routes */}
-        <Route
-          path="/admin/dashboard"
-          element={
-            <RoleRoute allowedRoles={['admin']}>
-              <AdminDashboard />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/admin/users"
-          element={
-            <RoleRoute allowedRoles={['admin']}>
-              <AdminUserManagement />
-            </RoleRoute>
-          }
-        />
-        <Route
-          path="/admin/logs"
-          element={
-            <RoleRoute allowedRoles={['admin']}>
-              <AuditLogs />
-            </RoleRoute>
-          }
-        />
+          {/* Protected Admin Routes */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <RoleRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <RoleRoute allowedRoles={['admin']}>
+                <AdminUserManagement />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/admin/logs"
+            element={
+              <RoleRoute allowedRoles={['admin']}>
+                <AuditLogs />
+              </RoleRoute>
+            }
+          />
+        </Route>
 
-        {/* Error Fallbacks */}
         <Route path="/forbidden" element={<Forbidden />} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Landing />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

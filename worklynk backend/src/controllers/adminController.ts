@@ -21,7 +21,7 @@ export const getUsers = async (req: AuthenticatedRequest, res: Response) => {
     const filter: any = {};
 
     if (search) {
-      // Use regex safely without special characters to prevent regex injection, or simple match
+      // Escape regex metacharacters to avoid injection
       const escapedSearch = search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
       filter.email = { $regex: escapedSearch, $options: 'i' };
     }

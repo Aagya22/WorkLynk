@@ -23,8 +23,7 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+[\]{};':
 
 const isValidString = (value: unknown): value is string => typeof value === 'string';
 
-// Verifies a signed CAPTCHA and enforces single use by consuming its signature.
-// Returns null on success, or an error message string on failure.
+// Verifies a CAPTCHA and consumes it (single use). Returns an error string, or null on success.
 const verifyCaptcha = async (captchaText: unknown, captchaKey: unknown): Promise<string | null> => {
   if (!isValidString(captchaText) || !isValidString(captchaKey)) {
     return 'CAPTCHA verification code is required.';
@@ -56,7 +55,7 @@ const verifyCaptcha = async (captchaText: unknown, captchaKey: unknown): Promise
     return 'Invalid CAPTCHA code. Please try again.';
   }
 
-  // Enforce single use: the unique index rejects a signature that was already consumed.
+  // Single use: unique index rejects a reused signature.
   try {
     await UsedCaptcha.create({ signature, expiresAt: new Date(expires) });
   } catch {
@@ -138,14 +137,14 @@ export const registerSelf = async (req: Request, res: Response) => {
       return res.status(400).json({ message: captchaError });
     }
 
-    // Validate password format before any existence check so it cannot be used as an enumeration oracle.
+    // Validate format before any existence check (avoids an enumeration oracle).
     if (!passwordRegex.test(password)) {
       return res.status(400).json({
         message: 'Password must be at least 12 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
       });
     }
 
-    // Generic response used for both new and already-registered emails to prevent user enumeration.
+    // Same response whether or not the email exists (anti-enumeration).
     const genericResponse = {
       message: 'Registration request received. If the email is eligible, an administrator will review it before the account can be used.'
     };
@@ -753,12 +752,12 @@ export const forceChangePassword = async (req: AuthenticatedRequest, res: Respon
       return res.status(400).json({ message: 'All fields (email, currentPassword, newPassword) are required.' });
     }
 
-    // Generic credential-failure message to avoid revealing whether the email is registered.
+    // Generic failure message (anti-enumeration).
     const genericAuthError = { message: 'Invalid email or current password.' };
 
     const user = await User.findOne({ email });
     if (!user || !user.isActive) {
-      // Equalize timing with the password-verification path for a non-existent account.
+      // Equalize timing with the real bcrypt path.
       await bcrypt.compare(currentPassword, '$2b$12$DummyHashToPreventTimingEnumerationAttacksSecure123');
       return res.status(401).json(genericAuthError);
     }

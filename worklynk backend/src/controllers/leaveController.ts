@@ -139,7 +139,7 @@ export const getAllLeaves = async (req: AuthenticatedRequest, res: Response) => 
   try {
     // Pagination logic
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const limit = Math.min(parseInt(req.query.limit as string) || 10, 100);
     const skip = (page - 1) * limit;
 
     const filter: any = {};
@@ -209,7 +209,7 @@ export const decideLeave = async (req: AuthenticatedRequest, res: Response) => {
       return res.status(400).json({ message: 'Access denied: You cannot approve or reject your own leave request.' });
     }
 
-    // An HR manager's own leave request can only be decided by an administrator.
+    // HR leave can only be decided by an admin.
     const requester = await User.findById(leave.employeeId).select('role');
     if (requester?.role === 'hr_manager' && req.user!.role !== 'admin') {
       return res.status(403).json({ message: 'HR leave requests can only be approved by an administrator.' });

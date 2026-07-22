@@ -11,7 +11,7 @@ const parseList = (value?: string): string[] =>
 const blocklist = parseList(process.env.IP_BLOCKLIST);
 const allowlist = parseList(process.env.IP_ALLOWLIST);
 
-// Normalize IPv6-mapped IPv4 addresses (e.g. ::ffff:127.0.0.1 -> 127.0.0.1).
+// Normalize IPv6-mapped IPv4 (::ffff:x -> x).
 const normalize = (ip: string): string => ip.replace(/^::ffff:/, '');
 
 export const ipFilter = (req: Request, res: Response, next: NextFunction) => {

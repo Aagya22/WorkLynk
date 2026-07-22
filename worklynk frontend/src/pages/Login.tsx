@@ -61,12 +61,13 @@ export const Login: React.FC = () => {
   return (
     <AuthLayout>
       <form onSubmit={handleSubmit} className="space-y-5">
-        <h2 className="text-xl font-bold text-slate-100 uppercase tracking-wider text-center">
-          Account Login
-        </h2>
-        
+        <div>
+          <h2 className="font-display text-[28px] font-bold tracking-[-0.025em] text-[#1C1917]">Welcome back</h2>
+          <p className="mt-2 text-[13.5px] text-[#57534E]">Sign in to your Worklynk account to continue.</p>
+        </div>
+
         {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl text-center">
+          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-center">
             {error}
           </div>
         )}
@@ -94,7 +95,7 @@ export const Login: React.FC = () => {
         {/* Text-Based CAPTCHA Section */}
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex-1 flex items-center justify-center bg-[#070B18] rounded-xl border border-white/[0.08] h-11 relative overflow-hidden select-none">
+            <div className="flex-1 flex items-center justify-center bg-[#F7F6F3] rounded-xl border border-[rgba(28,25,23,0.12)] h-11 relative overflow-hidden select-none">
               {captchaImage ? (
                 <img
                   src={captchaImage}
@@ -104,13 +105,13 @@ export const Login: React.FC = () => {
                   title="Click to refresh CAPTCHA"
                 />
               ) : (
-                <span className="text-xs text-slate-500">Loading...</span>
+                <span className="text-xs text-[#8A8580]">Loading...</span>
               )}
             </div>
             <button
               type="button"
               onClick={fetchNewCaptcha}
-              className="p-3 bg-[#0D1326] border border-white/[0.08] hover:border-[#4F8CFF]/50 text-slate-400 hover:text-slate-200 rounded-xl transition-all h-11 flex items-center justify-center focus:outline-none"
+              className="p-3 bg-white border border-[rgba(28,25,23,0.12)] hover:border-[rgba(28,25,23,0.28)] text-[#57534E] hover:text-[#1C1917] rounded-xl transition-all h-11 flex items-center justify-center focus:outline-none"
               title="Refresh CAPTCHA"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -136,12 +137,16 @@ export const Login: React.FC = () => {
           Log In
         </Button>
 
-        <div className="flex items-center justify-between pt-2">
-          <Link to="/forgot-password" className="text-xs font-semibold text-slate-400 hover:text-primary-400 transition-colors">
-            Forgot Password?
+        <div className="flex items-center justify-between pt-1">
+          <Link to="/forgot-password" className="text-[12.5px] font-semibold text-[#57534E] transition-colors hover:text-[#1C1917]">
+            Forgot password?
           </Link>
-          <Link to="/register" className="text-xs font-semibold text-slate-400 hover:text-primary-400 transition-colors">
-            Register Account
+        </div>
+
+        <div className="border-t border-[rgba(28,25,23,0.08)] pt-5 text-center text-[13px] text-[#57534E]">
+          Don't have an account?{' '}
+          <Link to="/register" className="font-bold text-[#1C1917] underline-offset-4 hover:underline">
+            Create one
           </Link>
         </div>
       </form>

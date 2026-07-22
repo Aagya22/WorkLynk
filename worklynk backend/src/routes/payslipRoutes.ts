@@ -11,7 +11,7 @@ import { protect, restrictTo } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-// Payroll is owned by HR; employees view their own. Admin (a system role) is excluded.
+// HR owns payroll; employees view their own; admin excluded.
 router.post('/', protect, restrictTo('hr_manager'), createPayslip);
 router.get('/', protect, restrictTo('employee', 'hr_manager'), getPayslips);
 router.get('/:id', protect, restrictTo('employee', 'hr_manager'), getPayslipById);

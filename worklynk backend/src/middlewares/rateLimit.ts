@@ -25,7 +25,7 @@ export const authLimiter = rateLimit({
   skipSuccessfulRequests: true
 });
 
-// Password reset limiter: max 3 requests per 15 minutes (to avoid email spamming)
+// Password reset: 3 per 15 min
 export const passwordResetLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 3,
@@ -37,7 +37,7 @@ export const passwordResetLimiter = rateLimit({
   skipSuccessfulRequests: true
 });
 
-// Self-registration limiter: max 5 accounts per hour per IP (counts successes to stop mass sign-ups)
+// Self-registration: 5 per hour per IP (counts successes)
 export const registrationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: process.env.NODE_ENV === 'development' ? 100 : 5,

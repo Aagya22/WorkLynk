@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
-import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Table } from '../components/Table';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { Input } from '../components/Input';
+import { StatTile } from '../components/Bento';
+import { Users, UserCheck, Lock, ShieldCheck } from 'lucide-react';
 
 interface UserRecord {
   _id: string;
@@ -195,7 +196,7 @@ export const AdminUserManagement: React.FC = () => {
           value={row.role}
           onChange={(e) => handleChangeRole(row._id, e.target.value)}
           disabled={processingId === row._id || row.approvalStatus === 'pending'}
-          className="px-2 py-1 bg-slate-950 border border-slate-900 focus:border-primary-500/50 text-slate-300 text-xs rounded-xl focus:outline-none focus:ring-1 focus:ring-primary-500/50 cursor-pointer capitalize disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-2 py-1 bg-[#F7F6F3] border hairline focus:border-[rgba(28,25,23,0.25)] ink-muted text-xs rounded-xl focus:outline-none focus:ring-1 focus:ring-[rgba(28,25,23,0.10)] cursor-pointer capitalize disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <option value="employee">Employee</option>
           <option value="hr_manager">HR Manager</option>
@@ -210,7 +211,7 @@ export const AdminUserManagement: React.FC = () => {
         return (
           <div className="flex flex-col space-y-1">
             {row.approvalStatus === 'pending' ? (
-              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider text-amber-400 bg-amber-500/10 w-fit">
+              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-50 w-fit">
                 Pending Approval
               </span>
             ) : row.approvalStatus === 'rejected' ? (
@@ -219,7 +220,7 @@ export const AdminUserManagement: React.FC = () => {
               </span>
             ) : (
               <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider w-fit ${
-                row.isActive ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10'
+                row.isActive ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50'
               }`}>
                 {row.isActive ? 'Active' : 'Suspended'}
               </span>
@@ -253,7 +254,7 @@ export const AdminUserManagement: React.FC = () => {
                 variant="secondary"
                 onClick={() => handleReviewApproval(row._id, 'rejected')}
                 disabled={processingId === row._id}
-                className="!bg-red-950/40 hover:!bg-red-900/60 border-red-500/20 text-red-400"
+                className="!bg-red-950/40 hover:!bg-red-900/60 border-red-200 text-red-700"
               >
                 Reject
               </Button>
@@ -301,27 +302,48 @@ export const AdminUserManagement: React.FC = () => {
     }
   ];
 
+  const activeCount = users.filter((u) => u.isActive).length;
+  const lockedCount = users.filter((u) => u.lockedUntil && new Date(u.lockedUntil) > new Date()).length;
+  const privilegedCount = users.filter((u) => u.role === 'admin' || u.role === 'hr_manager').length;
+
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-100">User Account Directory</h1>
-            <p className="text-sm text-slate-400 font-medium">
-              Create credentials, toggle system access status, force password updates, and manage user roles.
-            </p>
+        {!loading && !error && (
+          <div className="grid gap-5 sm:grid-cols-4">
+            <div className="animate-slide-up stagger-1">
+              <StatTile label="Accounts" value={users.length} tone="info" hint="Total registered" icon={<Users size={16} />} />
+            </div>
+            <div className="animate-slide-up stagger-2">
+              <StatTile label="Active" value={activeCount} tone="positive" hint="Able to sign in" icon={<UserCheck size={16} />} />
+            </div>
+            <div className="animate-slide-up stagger-3">
+              <StatTile
+                label="Locked"
+                value={lockedCount}
+                tone={lockedCount > 0 ? 'critical' : 'positive'}
+                hint={lockedCount === 0 ? 'No lockouts' : 'Awaiting unlock'}
+                icon={<Lock size={16} />}
+              />
+            </div>
+            <div className="animate-slide-up stagger-4">
+              <StatTile label="Privileged" value={privilegedCount} tone="violet" hint="Admin & HR roles" icon={<ShieldCheck size={16} />} />
+            </div>
           </div>
-          <div>
+        )}
+
+        {!loading && !error && (
+          <div className="flex justify-end">
             <Button variant="primary" onClick={() => setIsRegisterModalOpen(true)}>
               Register New Account
             </Button>
           </div>
-        </div>
+        )}
 
         {loading ? (
           <div className="py-20 flex justify-center items-center">
-            <div className="flex items-center space-x-3 text-slate-400 font-semibold text-sm">
-              <svg className="animate-spin h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <div className="flex items-center space-x-3 ink-muted font-semibold text-sm">
+              <svg className="animate-spin h-5 w-5 ink-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
@@ -329,25 +351,25 @@ export const AdminUserManagement: React.FC = () => {
             </div>
           </div>
         ) : error ? (
-          <div className="p-6 bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-semibold rounded-xl text-center">
+          <div className="p-6 bg-red-50 border border-red-200 text-red-700 text-sm font-semibold rounded-xl text-center">
             {error}
           </div>
         ) : users.length === 0 ? (
-          <div className="glassmorphism rounded-2xl p-12 border border-white/5 text-center text-slate-500 text-xs">
+          <div className="paper rounded-2xl p-14 text-center ink-subtle text-xs">
             No system user directory records found.
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="glassmorphism rounded-2xl border border-white/5 overflow-hidden">
+            <div className="paper paper-hover rounded-2xl overflow-hidden">
               <Table data={users} columns={columns} />
             </div>
 
             {/* Pagination Controls */}
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-950/20 p-4 border border-white/5 rounded-2xl">
-              <div className="text-xs text-slate-400 font-medium font-sans">
-                Showing users <span className="text-slate-200 font-bold">{Math.min(totalRecords, (page - 1) * limit + 1)}</span> to{' '}
-                <span className="text-slate-200 font-bold">{Math.min(totalRecords, page * limit)}</span> of{' '}
-                <span className="text-slate-200 font-bold">{totalRecords}</span> entries
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-[#FBFAF8] p-4 border hairline rounded-2xl">
+              <div className="text-xs ink-muted font-medium font-sans">
+                Showing users <span className="ink font-bold">{Math.min(totalRecords, (page - 1) * limit + 1)}</span> to{' '}
+                <span className="ink font-bold">{Math.min(totalRecords, page * limit)}</span> of{' '}
+                <span className="ink font-bold">{totalRecords}</span> entries
               </div>
               <div className="flex items-center space-x-2">
                 <Button
@@ -357,7 +379,7 @@ export const AdminUserManagement: React.FC = () => {
                 >
                   Previous
                 </Button>
-                <div className="text-xs text-slate-400 font-medium px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl">
+                <div className="text-xs ink-muted font-medium px-4 py-2 bg-[#F2F1ED] border hairline rounded-xl">
                   Page {page} / {totalPages}
                 </div>
                 <Button
@@ -380,13 +402,13 @@ export const AdminUserManagement: React.FC = () => {
         >
           <form onSubmit={handleRegisterUser} className="space-y-4">
             {registerError && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl text-center">
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-center">
                 {registerError}
               </div>
             )}
 
             {registerSuccess && (
-              <div className="p-3 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold rounded-xl text-center">
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl text-center">
                 {registerSuccess}
               </div>
             )}
@@ -414,22 +436,22 @@ export const AdminUserManagement: React.FC = () => {
             />
 
             <div className="flex flex-col space-y-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <label className="text-xs font-semibold uppercase tracking-wider ink-subtle">
                 System Role Assignment
               </label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as any)}
                 disabled={registerSubmitting}
-                className="w-full px-4 py-2.5 bg-slate-950/40 border border-slate-900/60 focus:border-primary-500/50 text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary-500/50"
+                className="w-full px-4 py-2.5 bg-[#F7F6F3] border hairline focus:border-[rgba(28,25,23,0.25)] ink rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[rgba(28,25,23,0.10)]"
               >
-                <option value="employee" className="bg-slate-950 text-slate-200">Employee</option>
-                <option value="hr_manager" className="bg-slate-950 text-slate-200">HR Manager</option>
-                <option value="admin" className="bg-slate-950 text-slate-200">Admin</option>
+                <option value="employee" className="bg-[#F7F6F3] ink">Employee</option>
+                <option value="hr_manager" className="bg-[#F7F6F3] ink">HR Manager</option>
+                <option value="admin" className="bg-[#F7F6F3] ink">Admin</option>
               </select>
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-900">
+            <div className="flex justify-end space-x-3 pt-4 border-t hairline">
               <Button
                 variant="secondary"
                 type="button"
@@ -445,6 +467,6 @@ export const AdminUserManagement: React.FC = () => {
           </form>
         </Modal>
       </div>
-    </DashboardLayout>
+    </>
   );
 };

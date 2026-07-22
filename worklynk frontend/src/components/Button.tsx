@@ -15,13 +15,14 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyle = 'inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-98 active:duration-75';
-  
+  const baseStyle =
+    'inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1917]/20 disabled:opacity-45 disabled:cursor-not-allowed';
+
   const variants = {
-    primary: 'bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-400 hover:to-accent-500 text-white shadow-lg shadow-glow focus:ring-accent-500 border border-accent-400/30',
-    secondary: 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border border-slate-700/50 focus:ring-slate-500',
-    danger: 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/20 focus:ring-red-500 border border-red-500/20',
-    glass: 'glassmorphism hover:bg-white/5 text-slate-100 focus:ring-primary-500',
+    primary: 'bg-[#1C1917] hover:bg-[#2B2724] text-white border border-transparent',
+    secondary: 'bg-white hover:bg-[#F7F6F3] text-[#1C1917] border border-[rgba(28,25,23,0.12)]',
+    danger: 'bg-[#B91C1C] hover:bg-[#991B1B] text-white border border-transparent',
+    glass: 'bg-transparent hover:bg-[#F2F1ED] text-[#57534E] border border-transparent',
   };
 
   const widthStyle = fullWidth ? 'w-full' : '';

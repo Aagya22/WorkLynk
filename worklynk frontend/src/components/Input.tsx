@@ -23,7 +23,7 @@ export const Input: React.FC<InputProps> = ({
   return (
     <div className={`flex flex-col space-y-1.5 w-full ${className}`}>
       {label && (
-        <label htmlFor={id} className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <label htmlFor={id} className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8A8580]">
           {label}
         </label>
       )}
@@ -31,10 +31,10 @@ export const Input: React.FC<InputProps> = ({
         <input
           id={id}
           type={inputType}
-          className={`w-full px-4 py-2.5 bg-slate-900/50 border rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 transition-all duration-300 ${
+          className={`w-full rounded-xl border bg-white px-4 py-2.5 text-sm text-[#1C1917] placeholder-[#A8A29E] transition-colors duration-200 focus:outline-none focus:ring-2 ${
             error
-              ? 'border-red-500/50 focus:ring-red-500/20 focus:border-red-500'
-              : 'border-slate-800/80 focus:border-primary-500/50 focus:ring-primary-500/10'
+              ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
+              : 'border-[rgba(28,25,23,0.12)] focus:border-[rgba(28,25,23,0.28)] focus:ring-[rgba(28,25,23,0.08)]'
           }`}
           {...props}
         />
@@ -42,7 +42,7 @@ export const Input: React.FC<InputProps> = ({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-slate-300 transition-colors focus:outline-none"
+            className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#8A8580] hover:text-[#1C1917] transition-colors focus:outline-none"
           >
             {showPassword ? (
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -57,8 +57,8 @@ export const Input: React.FC<InputProps> = ({
           </button>
         )}
       </div>
-      {error && <span className="text-xs text-red-400 font-medium pl-1">{error}</span>}
-      {!error && helperText && <span className="text-xs text-slate-500 pl-1">{helperText}</span>}
+      {error && <span className="text-xs text-red-600 font-medium pl-1">{error}</span>}
+      {!error && helperText && <span className="text-xs text-[#8A8580] pl-1">{helperText}</span>}
     </div>
   );
 };

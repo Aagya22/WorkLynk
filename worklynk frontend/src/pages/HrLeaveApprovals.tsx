@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Table } from '../components/Table';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
+import { StatTile } from '../components/Bento';
+import { Clock3, CheckCircle2, XCircle, CalendarDays } from 'lucide-react';
 
 interface LeaveRequest {
   _id: string;
@@ -107,10 +108,10 @@ export const HrLeaveApprovals: React.FC = () => {
   };
 
   const statusColors = {
-    pending: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    approved: 'text-green-400 bg-green-500/10 border-green-500/20',
-    rejected: 'text-red-400 bg-red-500/10 border-red-500/20',
-    cancelled: 'text-slate-400 bg-slate-500/10 border-slate-500/20'
+    pending: 'text-amber-800 bg-amber-50 border-amber-200',
+    approved: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+    rejected: 'text-red-700 bg-red-50 border-red-200',
+    cancelled: 'ink-muted bg-[#F2F1ED] hairline'
   };
 
   const columns = [
@@ -124,7 +125,7 @@ export const HrLeaveApprovals: React.FC = () => {
         <span className="flex items-center gap-2">
           <span className="truncate">{row.employeeId?.email || 'N/A'}</span>
           {row.employeeId?.role === 'hr_manager' && (
-            <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-400">HR</span>
+            <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-800">HR</span>
           )}
         </span>
       )
@@ -132,7 +133,7 @@ export const HrLeaveApprovals: React.FC = () => {
     {
       header: 'Type',
       accessor: (row: LeaveRequest) => (
-        <span className="capitalize font-medium text-slate-300">{row.type || (row as any).leaveType}</span>
+        <span className="capitalize font-medium ink-muted">{row.type || (row as any).leaveType}</span>
       )
     },
     {
@@ -146,7 +147,7 @@ export const HrLeaveApprovals: React.FC = () => {
     {
       header: 'Reason',
       accessor: (row: LeaveRequest) => (
-        <span className="text-slate-400 max-w-xs truncate block" title={row.reason}>
+        <span className="ink-muted max-w-xs truncate block" title={row.reason}>
           {row.reason}
         </span>
       )
@@ -166,7 +167,7 @@ export const HrLeaveApprovals: React.FC = () => {
           const isHrRequest = row.employeeId?.role === 'hr_manager';
           const canAct = !isHrRequest || currentRole === 'admin';
           if (!canAct) {
-            return <span className="text-xs font-semibold text-amber-400">Requires admin approval</span>;
+            return <span className="text-xs font-semibold text-amber-800">Requires admin approval</span>;
           }
           return (
             <div className="flex items-center space-x-2">
@@ -183,13 +184,13 @@ export const HrLeaveApprovals: React.FC = () => {
         if (row.status === 'approved' || row.status === 'rejected') {
           return (
             <div className="flex flex-col">
-              <span className="text-xs text-slate-400">
+              <span className="text-xs ink-muted">
                 {row.status === 'approved' ? 'Approved' : 'Rejected'} by{' '}
-                <span className="font-semibold text-slate-200">{row.decidedBy?.email || 'Unknown'}</span>
+                <span className="font-semibold ink">{row.decidedBy?.email || 'Unknown'}</span>
                 {row.decidedBy?.role ? ` · ${roleLabels[row.decidedBy.role] || row.decidedBy.role}` : ''}
               </span>
               {row.decisionComment && (
-                <span className="max-w-[220px] truncate text-[11px] italic text-slate-500" title={row.decisionComment}>
+                <span className="max-w-[220px] truncate text-[11px] italic ink-subtle" title={row.decisionComment}>
                   "{row.decisionComment}"
                 </span>
               )}
@@ -197,61 +198,66 @@ export const HrLeaveApprovals: React.FC = () => {
           );
         }
 
-        return <span className="text-xs text-slate-600">—</span>;
+        return <span className="text-xs ink-subtle">-</span>;
       }
     }
   ];
 
+  const pendingCount = leaves.filter((l) => l.status === 'pending').length;
+  const approvedCount = leaves.filter((l) => l.status === 'approved').length;
+  const rejectedCount = leaves.filter((l) => l.status === 'rejected').length;
+  const pendingDays = leaves
+    .filter((l) => l.status === 'pending')
+    .reduce((sum, l) => sum + Math.max(1, Math.round((new Date(l.endDate).getTime() - new Date(l.startDate).getTime()) / 86400000) + 1), 0);
+
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-8">
-        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-          <div>
-            <h1 className="font-display text-3xl font-bold tracking-tight text-slate-100">Leave Approvals Center</h1>
-            <p className="text-sm text-slate-400 font-medium max-w-2xl mt-1">
-              Review submitted leave requests, write assessment comments, and grant or deny time-off requests.
-            </p>
+        {!loading && !error && (
+          <div className="grid gap-5 sm:grid-cols-4">
+            <div className="animate-slide-up stagger-1">
+              <StatTile
+                label="Awaiting review"
+                value={pendingCount}
+                tone={pendingCount > 0 ? 'warning' : 'positive'}
+                hint={pendingCount === 0 ? 'Queue is clear' : 'Needs a decision'}
+                icon={<Clock3 size={16} />}
+              />
+            </div>
+            <div className="animate-slide-up stagger-2">
+              <StatTile label="Approved" value={approvedCount} tone="positive" hint="Signed off" icon={<CheckCircle2 size={16} />} />
+            </div>
+            <div className="animate-slide-up stagger-3">
+              <StatTile label="Rejected" value={rejectedCount} tone="critical" hint="Declined requests" icon={<XCircle size={16} />} />
+            </div>
+            <div className="animate-slide-up stagger-4">
+              <StatTile label="Days requested" value={pendingDays} tone="violet" hint="Across pending requests" icon={<CalendarDays size={16} />} />
+            </div>
           </div>
-          
-          {/* Quick Filters */}
-          <div className="flex items-center space-x-2 bg-slate-950/40 p-1 border border-slate-900 rounded-xl">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider transition-all duration-300 ${
-                statusFilter === 'all'
-                  ? 'bg-primary-500/10 text-primary-400 border border-primary-500/20'
-                  : 'text-slate-500 hover:text-slate-300 border border-transparent'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setStatusFilter('pending')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider transition-all duration-300 ${
-                statusFilter === 'pending'
-                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                  : 'text-slate-500 hover:text-slate-300 border border-transparent'
-              }`}
-            >
-              Pending
-            </button>
-            <button
-              onClick={() => setStatusFilter('decided')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider transition-all duration-300 ${
-                statusFilter === 'decided'
-                  ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                  : 'text-slate-500 hover:text-slate-300 border border-transparent'
-              }`}
-            >
-              Decided
-            </button>
+        )}
+
+        {!loading && !error && (
+          <div className="flex justify-end">
+            <div className="paper flex items-center gap-1 rounded-xl p-1">
+              {(['all', 'pending', 'decided'] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setStatusFilter(f)}
+                  className={`rounded-lg px-3.5 py-1.5 text-[12px] font-semibold capitalize transition-all duration-200 ${
+                    statusFilter === f ? 'bg-[#1C1917] text-white' : 'ink-muted hover:bg-[#F2F1ED]'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {loading ? (
           <div className="py-20 flex justify-center items-center">
-            <div className="flex items-center space-x-3 text-slate-400 font-semibold text-sm">
-              <svg className="animate-spin h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <div className="flex items-center space-x-3 ink-muted font-semibold text-sm">
+              <svg className="animate-spin h-5 w-5 ink-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
@@ -259,35 +265,35 @@ export const HrLeaveApprovals: React.FC = () => {
             </div>
           </div>
         ) : error ? (
-          <div className="p-6 bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-semibold rounded-xl text-center">
+          <div className="p-6 bg-red-50 border border-red-200 text-red-700 text-sm font-semibold rounded-xl text-center">
             {error}
           </div>
         ) : leaves.length === 0 ? (
-          <div className="glassmorphism rounded-2xl p-16 border border-white/5 text-center flex flex-col items-center justify-center space-y-4">
-            <div className="p-3 bg-slate-900 border border-slate-800 rounded-2xl text-slate-500">
+          <div className="paper rounded-2xl p-16 text-center flex flex-col items-center justify-center space-y-4">
+            <div className="p-3 bg-[#F2F1ED] border hairline rounded-2xl ink-subtle">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
             </div>
             <div className="space-y-1">
-              <p className="text-slate-300 font-bold text-base">All Caught Up!</p>
-              <p className="text-xs text-slate-500 max-w-sm">
+              <p className="ink-muted font-bold text-base">All Caught Up!</p>
+              <p className="text-xs ink-subtle max-w-sm">
                 No leave requests found matching the "{statusFilter}" filter selection.
               </p>
             </div>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="glassmorphism rounded-2xl border border-white/5 overflow-hidden">
+            <div className="paper paper-hover rounded-2xl overflow-hidden">
               <Table data={leaves} columns={columns} />
             </div>
 
             {/* Pagination Controls */}
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-950/20 p-4 border border-white/5 rounded-2xl">
-              <div className="text-xs text-slate-400 font-medium font-sans">
-                Showing leaves <span className="text-slate-200 font-bold">{Math.min(totalRecords, (page - 1) * limit + 1)}</span> to{' '}
-                <span className="text-slate-200 font-bold">{Math.min(totalRecords, page * limit)}</span> of{' '}
-                <span className="text-slate-200 font-bold">{totalRecords}</span> entries
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-[#FBFAF8] p-4 border hairline rounded-2xl">
+              <div className="text-xs ink-muted font-medium font-sans">
+                Showing leaves <span className="ink font-bold">{Math.min(totalRecords, (page - 1) * limit + 1)}</span> to{' '}
+                <span className="ink font-bold">{Math.min(totalRecords, page * limit)}</span> of{' '}
+                <span className="ink font-bold">{totalRecords}</span> entries
               </div>
               <div className="flex items-center space-x-2">
                 <Button
@@ -297,7 +303,7 @@ export const HrLeaveApprovals: React.FC = () => {
                 >
                   Previous
                 </Button>
-                <div className="text-xs text-slate-400 font-medium px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl">
+                <div className="text-xs ink-muted font-medium px-4 py-2 bg-[#F2F1ED] border hairline rounded-xl">
                   Page {page} / {totalPages}
                 </div>
                 <Button
@@ -325,36 +331,36 @@ export const HrLeaveApprovals: React.FC = () => {
           {selectedLeave && (
             <form onSubmit={handleDecisionSubmit} className="space-y-4">
               {modalError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl text-center">
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-center">
                   {modalError}
                 </div>
               )}
 
-              <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-900/50 space-y-2.5 text-sm text-slate-300">
+              <div className="bg-[#F7F6F3] p-4 rounded-xl border hairline space-y-2.5 text-sm ink-muted">
                 <div>
-                  <span className="text-xs text-slate-500 block">Applicant:</span>
-                  <strong className="text-slate-200">{selectedLeave.employeeId?.email}</strong>
+                  <span className="text-xs ink-subtle block">Applicant:</span>
+                  <strong className="ink">{selectedLeave.employeeId?.email}</strong>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <span className="text-xs text-slate-500 block">Start Date:</span>
+                    <span className="text-xs ink-subtle block">Start Date:</span>
                     <strong>{new Date(selectedLeave.startDate).toLocaleDateString()}</strong>
                   </div>
                   <div>
-                    <span className="text-xs text-slate-500 block">End Date:</span>
+                    <span className="text-xs ink-subtle block">End Date:</span>
                     <strong>{new Date(selectedLeave.endDate).toLocaleDateString()}</strong>
                   </div>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500 block">Leave Reason:</span>
-                  <p className="text-xs text-slate-400 italic font-mono p-2 bg-slate-900 border border-slate-800/80 rounded-md mt-1">
+                  <span className="text-xs ink-subtle block">Leave Reason:</span>
+                  <p className="text-xs ink-muted italic font-mono p-2 bg-[#F2F1ED] border hairline/80 rounded-md mt-1">
                     "{selectedLeave.reason}"
                   </p>
                 </div>
               </div>
 
               <div className="flex flex-col space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <label className="text-xs font-semibold uppercase tracking-wider ink-subtle">
                   Decision Comment (Mandatory)
                 </label>
                 <textarea
@@ -364,11 +370,11 @@ export const HrLeaveApprovals: React.FC = () => {
                   disabled={processing}
                   rows={3}
                   placeholder="Explain the rationale for this leave decision..."
-                  className="w-full px-4 py-2.5 bg-slate-950/40 border border-slate-900/60 focus:border-primary-500/50 text-slate-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary-500/50 placeholder-slate-600"
+                  className="w-full px-4 py-2.5 bg-[#F7F6F3] border hairline focus:border-[rgba(28,25,23,0.25)] ink rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[rgba(28,25,23,0.10)] placeholder-[#A8A29E]"
                 />
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-900">
+              <div className="flex justify-end space-x-3 pt-4 border-t hairline">
                 <Button
                   variant="secondary"
                   type="button"
@@ -393,6 +399,6 @@ export const HrLeaveApprovals: React.FC = () => {
           )}
         </Modal>
       </div>
-    </DashboardLayout>
+    </>
   );
 };

@@ -48,17 +48,17 @@ export const ResetPassword: React.FC = () => {
     return (
       <AuthLayout>
         <div className="space-y-6 text-center">
-          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-500/10 border border-green-500/30">
-            <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-emerald-50 border border-emerald-200">
+            <svg className="h-6 w-6 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
           </div>
           
           <div className="space-y-2">
-            <h2 className="text-xl font-bold text-slate-100 uppercase tracking-wider">
+            <h2 className="font-display text-[28px] font-bold tracking-[-0.025em] text-[#1C1917]">
               Password Restored
             </h2>
-            <p className="text-xs text-slate-400 leading-relaxed font-sans px-4">
+            <p className="text-xs text-[#57534E] leading-relaxed font-sans px-4">
               Your password has been successfully reset. 
               All existing active sessions have been invalidated. You can now log in with your new credentials.
             </p>
@@ -80,22 +80,22 @@ export const ResetPassword: React.FC = () => {
     <AuthLayout>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="text-center space-y-1">
-          <h2 className="text-xl font-bold text-slate-100 uppercase tracking-wider">
+          <h2 className="font-display text-[28px] font-bold tracking-[-0.025em] text-[#1C1917]">
             Reset Password
           </h2>
-          <p className="text-[10px] text-slate-400 font-medium">
+          <p className="text-[10px] text-[#57534E] font-medium">
             Define a strong credentials key for your secure profile.
           </p>
         </div>
         
         {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl text-center">
+          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-center">
             {error}
           </div>
         )}
 
         {!token && (
-          <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold rounded-xl text-center">
+          <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold rounded-xl text-center">
             Warning: Reset token was not detected in URL parameters. Please check your recovery link.
           </div>
         )}
@@ -129,7 +129,7 @@ export const ResetPassword: React.FC = () => {
         </Button>
 
         <div className="text-center pt-2">
-          <Link to="/login" className="text-xs font-semibold text-slate-400 hover:text-primary-400 transition-colors">
+          <Link to="/login" className="text-[12.5px] font-semibold text-[#57534E] hover:text-[#1C1917] transition-colors">
             Cancel and Return
           </Link>
         </div>
