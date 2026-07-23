@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { Input } from '../components/Input';
@@ -14,7 +14,9 @@ export const MfaVerify: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const tempToken = location.state?.tempToken;
+  const [searchParams] = useSearchParams();
+
+  const tempToken = location.state?.tempToken || searchParams.get('tempToken');
 
   useEffect(() => {
     if (!tempToken) {

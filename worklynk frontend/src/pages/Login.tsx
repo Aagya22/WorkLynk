@@ -1,10 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import api from '../utils/api';
+
+const API_BASE = (import.meta as any).env.VITE_API_URL || 'http://localhost:5001';
+
+const OAUTH_ERRORS: Record<string, string> = {
+  oauth_unavailable: 'Google sign-in is not configured on this server.',
+  oauth_denied: 'Google sign-in was cancelled.',
+  oauth_failed: 'Google sign-in failed. Please try again.',
+  oauth_state: 'Google sign-in could not be verified. Please try again.',
+  oauth_email: 'Your Google account has no verified email address.',
+  oauth_nouser: 'No Worklynk account matches that Google address. Ask an administrator to create one first.',
+  oauth_pending: 'Your account is still pending administrator approval.',
+  oauth_rejected: 'Your registration request was rejected.',
+  oauth_inactive: 'This account has been deactivated.',
+  oauth_mismatch: 'This email is already linked to a different Google account.'
+};
 
 export const Login: React.FC = () => {
   const { login } = useAuth();
@@ -30,9 +45,22 @@ export const Login: React.FC = () => {
     }
   };
 
+  const [searchParams] = useSearchParams();
+  const [notice, setNotice] = useState('');
+
   useEffect(() => {
     fetchNewCaptcha();
   }, []);
+
+  // Surface any error or notice the OAuth callback bounced back with.
+  useEffect(() => {
+    const err = searchParams.get('error');
+    if (err) setError(OAUTH_ERRORS[err] || 'Sign-in failed. Please try again.');
+    const info = searchParams.get('notice');
+    if (info === 'oauth_signup_pending') {
+      setNotice('Your Google sign-up request has been received and is awaiting administrator approval.');
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +97,12 @@ export const Login: React.FC = () => {
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-center">
             {error}
+          </div>
+        )}
+
+        {notice && (
+          <div className="p-3 bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold rounded-xl text-center">
+            {notice}
           </div>
         )}
 
@@ -136,6 +170,26 @@ export const Login: React.FC = () => {
         <Button type="submit" variant="primary" fullWidth loading={loading}>
           Log In
         </Button>
+
+        <div className="flex items-center gap-3 py-1">
+          <span className="h-px flex-1 bg-[rgba(28,25,23,0.10)]" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-[#A8A29E]">or</span>
+          <span className="h-px flex-1 bg-[rgba(28,25,23,0.10)]" />
+        </div>
+
+        {/* Full-page redirect, not an XHR: the browser must follow Google's flow. */}
+        <a
+          href={`${API_BASE}/api/auth/google`}
+          className="flex w-full items-center justify-center gap-3 rounded-xl border border-[rgba(28,25,23,0.14)] bg-white py-2.5 text-[13.5px] font-semibold text-[#1C1917] transition-colors hover:bg-[#FBFAF8]"
+        >
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.5 29.5 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.3-.4-3.5z" />
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.5 29.5 4.5 24 4.5 16.3 4.5 9.7 8.9 6.3 14.7z" />
+            <path fill="#4CAF50" d="M24 43.5c5.4 0 10.3-2.1 14-5.4l-6.5-5.5c-2 1.5-4.6 2.4-7.5 2.4-5.2 0-9.6-3.3-11.2-8l-6.5 5C9.6 39 16.2 43.5 24 43.5z" />
+            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.5l6.5 5.5c-.5.4 7-5 7-15 0-1.2-.1-2.3-.4-3.5z" />
+          </svg>
+          Continue with Google
+        </a>
 
         <div className="flex items-center justify-between pt-1">
           <Link to="/forgot-password" className="text-[12.5px] font-semibold text-[#57534E] transition-colors hover:text-[#1C1917]">

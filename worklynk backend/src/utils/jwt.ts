@@ -19,11 +19,11 @@ export interface ITokenPayload {
 }
 
 export const generateAccessToken = (payload: ITokenPayload): string => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '15d' });
 };
 
 export const generateRefreshToken = (payload: ITokenPayload): string => {
-  return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+  return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '30d' });
 };
 
 export const verifyAccessToken = (token: string): ITokenPayload => {

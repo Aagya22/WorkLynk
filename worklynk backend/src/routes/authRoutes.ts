@@ -20,6 +20,7 @@ import {
   verifyActivationToken,
   activateAccount
 } from '../controllers/authController';
+import { googleRedirect, googleCallback } from '../controllers/oauthController';
 import { protect, restrictTo } from '../middlewares/authMiddleware';
 import { authLimiter, mfaSetupLimiter, passwordResetLimiter, registrationLimiter } from '../middlewares/rateLimit';
 
@@ -29,6 +30,8 @@ const router = Router();
 router.get('/captcha', getCaptcha);
 router.post('/register-self', registrationLimiter, registerSelf);
 router.post('/login', authLimiter, login);
+router.get('/google', authLimiter, googleRedirect);
+router.get('/google/callback', authLimiter, googleCallback);
 router.post('/mfa/verify', mfaSetupLimiter, verifyMFA);
 router.post('/refresh', refresh);
 router.post('/force-change-password', authLimiter, forceChangePassword);

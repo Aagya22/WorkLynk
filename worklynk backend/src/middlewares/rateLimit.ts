@@ -16,7 +16,7 @@ export const apiLimiter = rateLimit({
 // Sensitive Auth rate limiter: max 5 failed attempts per 15 minutes
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'development' ? 100 : 5,
+  max: process.env.NODE_ENV === 'development' ? 100 : 20,
   message: {
     message: 'Too many authentication attempts from this IP, please try again after 15 minutes.'
   },

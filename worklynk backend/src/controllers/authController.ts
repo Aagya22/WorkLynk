@@ -21,6 +21,7 @@ import { sendSecurityAlertEmail, sendMail } from '../utils/email';
 
 //Activation links stay valid for 24 hours
 const ACTIVATION_WINDOW_MS = 24 * 60 * 60 * 1000;
+const ACCESS_TOKEN_TTL_MS = 15 * 24 * 60 * 60 * 1000;
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+[\]{};':",./<>?~`|\\-]).{12,}$/;
 
@@ -348,14 +349,14 @@ export const login = async (req: AuthenticatedRequest, res: Response) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 15 * 60 * 1000
+      maxAge: 15 * 24 * 60 * 60 * 1000 // 15 days, matches access token TTL
     });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days, matches refresh token TTL
     });
 
     return res.status(200).json({
@@ -452,14 +453,14 @@ export const verifyMFA = async (req: AuthenticatedRequest, res: Response) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 15 * 60 * 1000
+      maxAge: 15 * 24 * 60 * 60 * 1000 // 15 days, matches access token TTL
     });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days, matches refresh token TTL
     });
 
     return res.status(200).json({
@@ -607,10 +608,13 @@ export const logout = async (req: AuthenticatedRequest, res: Response) => {
 
     try {
       const decoded = verifyAccessToken(token);
-      const expiresAt = new Date(decoded.exp ? decoded.exp * 1000 : Date.now() + 15 * 60 * 1000);
+      // Keep the revoked token blacklisted until it would have expired on its own.
+      // The fallback matches the access-token lifetime so a token lacking an exp
+      // claim cannot slip back into use before it truly dies.
+      const expiresAt = new Date(decoded.exp ? decoded.exp * 1000 : Date.now() + ACCESS_TOKEN_TTL_MS);
       await BlacklistedToken.create({ token, expiresAt });
     } catch {
-      await BlacklistedToken.create({ token, expiresAt: new Date(Date.now() + 15 * 60 * 1000) });
+      await BlacklistedToken.create({ token, expiresAt: new Date(Date.now() + ACCESS_TOKEN_TTL_MS) });
     }
 
     user.sessionVersion += 1;
@@ -694,14 +698,14 @@ export const refresh = async (req: AuthenticatedRequest, res: Response) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 15 * 60 * 1000
+      maxAge: 15 * 24 * 60 * 60 * 1000 // 15 days, matches access token TTL
     });
 
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days, matches refresh token TTL
     });
 
     return res.status(200).json({ message: 'Session refreshed successfully.' });
@@ -911,13 +915,13 @@ export const signOutOthers = async (req: AuthenticatedRequest, res: Response) =>
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 15 * 60 * 1000
+      maxAge: 15 * 24 * 60 * 60 * 1000 // 15 days, matches access token TTL
     });
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days, matches refresh token TTL
     });
 
     await AuditLog.create({

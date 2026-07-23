@@ -26,6 +26,7 @@ export interface IUser extends Document {
   resetPasswordExpires: Date | null;
   activationToken: string | null;
   activationTokenExpires: Date | null;
+  googleId: string | null;
   department: string | null;
   consentToken: string | null;
   consentTokenExpires: Date | null;
@@ -138,6 +139,11 @@ const UserSchema = new Schema<IUser>({
     type: Date,
     default: null
   },
+  googleId: {
+    type: String,
+    default: null,
+    index: true
+  },
   consentToken: {
     type: String,
     default: null
@@ -201,7 +207,7 @@ UserSchema.methods.incrementLoginAttempts = async function (this: IUser): Promis
   this.failedLoginCount += 1;
   this.lastFailedLogin = new Date();
 
-  if (this.failedLoginCount >= 5) {
+  if (this.failedLoginCount >= 12) {
     this.lockedUntil = new Date(Date.now() + 15 * 60 * 1000); // 15-minute lock
   }
 
