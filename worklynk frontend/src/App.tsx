@@ -23,6 +23,7 @@ import { NotFound } from './pages/NotFound';
 import { Register } from './pages/Register';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
+import { Activate } from './pages/Activate';
 
 // Route protection for authenticated users
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -125,6 +126,9 @@ export const App: React.FC = () => {
             </GuestRoute>
           }
         />
+        {/* Not guest-gated: the activation token is self-authenticating, so the
+            link must work even if another account is already signed in. */}
+        <Route path="/activate" element={<Activate />} />
         <Route path="/verify-mfa" element={<MfaVerify />} />
         <Route path="/force-change-password" element={<ForcePasswordChange />} />
 

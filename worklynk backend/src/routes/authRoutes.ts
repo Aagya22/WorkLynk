@@ -16,7 +16,9 @@ import {
   getCaptcha,
   registerSelf,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  verifyActivationToken,
+  activateAccount
 } from '../controllers/authController';
 import { protect, restrictTo } from '../middlewares/authMiddleware';
 import { authLimiter, mfaSetupLimiter, passwordResetLimiter, registrationLimiter } from '../middlewares/rateLimit';
@@ -32,6 +34,8 @@ router.post('/refresh', refresh);
 router.post('/force-change-password', authLimiter, forceChangePassword);
 router.post('/forgot-password', passwordResetLimiter, forgotPassword);
 router.post('/reset-password', passwordResetLimiter, resetPassword);
+router.get('/activate', passwordResetLimiter, verifyActivationToken);
+router.post('/activate', passwordResetLimiter, activateAccount);
 
 // Authenticated Routes
 router.get('/me', protect, getMe);

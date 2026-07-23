@@ -16,6 +16,7 @@ interface UserRecord {
   lockedUntil: string | null;
   createdAt: string;
   approvalStatus?: 'pending' | 'approved' | 'rejected';
+  pendingActivation?: boolean;
 }
 
 export const AdminUserManagement: React.FC = () => {
@@ -26,7 +27,6 @@ export const AdminUserManagement: React.FC = () => {
   // Register user states
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [role, setRole] = useState<'employee' | 'hr_manager' | 'admin'>('employee');
   const [registerError, setRegisterError] = useState('');
   const [registerSuccess, setRegisterSuccess] = useState('');
@@ -74,22 +74,17 @@ export const AdminUserManagement: React.FC = () => {
     setRegisterError('');
     setRegisterSuccess('');
 
-    if (!email || !password || !role) {
-      setRegisterError('All registration fields are required.');
+    if (!email || !role) {
+      setRegisterError('Email and role are required.');
       return;
     }
 
     setRegisterSubmitting(true);
     try {
-      await api.post('/api/auth/register', {
-        email,
-        password,
-        role
-      });
+      await api.post('/api/auth/register', { email, role });
 
-      setRegisterSuccess('User registered successfully.');
+      setRegisterSuccess('Account created. An activation link has been emailed to the user.');
       setEmail('');
-      setPassword('');
       setRole('employee');
       fetchUsers(1);
 
@@ -170,6 +165,19 @@ export const AdminUserManagement: React.FC = () => {
     }
   };
 
+  const handleResendActivation = async (id: string) => {
+    setProcessingId(id);
+    try {
+      await api.post(`/api/admin/users/${id}/resend-activation`);
+      alert('A new activation link has been emailed to the user.');
+      fetchUsers(page);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to resend the activation link.');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const handleResetMfa = async (id: string) => {
     if (!window.confirm('Reset this user\'s two-factor authentication? They will need to set it up again from their profile. Use this to rescue a user who lost their authenticator.')) return;
     setProcessingId(id);
@@ -225,6 +233,11 @@ export const AdminUserManagement: React.FC = () => {
                 {row.isActive ? 'Active' : 'Suspended'}
               </span>
             )}
+            {row.pendingActivation && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 w-fit">
+                Awaiting Activation
+              </span>
+            )}
             {isLocked && (
               <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider text-rose-400 bg-rose-500/10 w-fit">
                 LOCKED
@@ -264,6 +277,15 @@ export const AdminUserManagement: React.FC = () => {
 
         return (
           <div className="flex items-center space-x-2">
+            {row.pendingActivation && (
+              <Button
+                variant="primary"
+                onClick={() => handleResendActivation(row._id)}
+                disabled={processingId === row._id}
+              >
+                Resend Invite
+              </Button>
+            )}
             <Button
               variant={row.isActive ? 'secondary' : 'primary'}
               onClick={() => handleToggleStatus(row._id, row.isActive)}
@@ -424,16 +446,10 @@ export const AdminUserManagement: React.FC = () => {
               disabled={registerSubmitting}
             />
 
-            <Input
-              id="reg-password"
-              label="Initial Password"
-              type="password"
-              placeholder="Minimum 12 chars, upper, lower, number, symbol"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={registerSubmitting}
-            />
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-3.5 text-[12.5px] leading-relaxed text-blue-800">
+              No password is set here. The user receives a one-time activation link by email and chooses
+              their own password, so no administrator ever knows their credential.
+            </div>
 
             <div className="flex flex-col space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wider ink-subtle">

@@ -6,6 +6,7 @@ import {
   unlockUser,
   forcePasswordReset,
   resetUserMFA,
+  resendActivation,
   getSystemStats,
   reviewUserRegistration
 } from '../controllers/adminController';
@@ -28,5 +29,6 @@ router.put('/users/:id/approval', reviewUserRegistration);
 router.post('/users/:id/unlock', unlockUser);
 router.post('/users/:id/force-password-reset', forcePasswordReset);
 router.post('/users/:id/reset-mfa', resetUserMFA);
+router.post('/users/:id/resend-activation', resendActivation);
 
 export default router;

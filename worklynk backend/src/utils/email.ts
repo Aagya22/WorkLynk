@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendSecurityAlertEmail = async (
+export const sendMail = async (
   to: string,
   subject: string,
   text: string
@@ -34,8 +34,10 @@ export const sendSecurityAlertEmail = async (
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`[EMAIL SENT SUCCESS] Alert delivered to ${to}`);
+    console.log(`[EMAIL SENT SUCCESS] Delivered to ${to}`);
   } catch (error) {
-    console.error('Failed to send security alert email:', error);
+    console.error('Failed to send email:', error);
   }
 };
+
+export const sendSecurityAlertEmail = sendMail;

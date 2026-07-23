@@ -4,6 +4,7 @@ import { AuditLog } from '../models/audit-log.model';
 import { Leave } from '../models/leave.model';
 import { Notification } from '../models/notification.model';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware';
+import { issueActivationToken } from './authController';
 
 const sanitizeInput = (text: string): string => {
   if (!text) return '';
@@ -35,11 +36,17 @@ export const getUsers = async (req: AuthenticatedRequest, res: Response) => {
     }
 
     const total = await User.countDocuments(filter);
-    const users = await User.find(filter)
-      .select('-passwordHash -mfaSecret -consentToken')
+    const records = await User.find(filter)
+      .select('-mfaSecret -consentToken -resetPasswordToken -activationToken')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
+
+
+    const users = records.map((record) => {
+      const { passwordHash, ...safe } = record.toObject();
+      return { ...safe, pendingActivation: !passwordHash };
+    });
 
     return res.status(200).json({
       users,
@@ -200,6 +207,38 @@ export const forcePasswordReset = async (req: AuthenticatedRequest, res: Respons
     });
   } catch (error: any) {
     console.error('Error triggering password reset:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+};
+
+/** Re-issues an activation link when the original expired or never arrived. */
+export const resendActivation = async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params;
+  const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    if (user.passwordHash) {
+      return res.status(400).json({ message: 'This account has already been activated.' });
+    }
+
+    await issueActivationToken(user);
+
+    await AuditLog.create({
+      userId: req.user!._id,
+      actionType: 'ADMIN_ACTIVATION_RESEND',
+      targetResource: `user:${id}`,
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'] || 'unknown'
+    });
+
+    return res.status(200).json({ message: 'A new activation link has been emailed to the user.' });
+  } catch (error: any) {
+    console.error('Error resending activation link:', error);
     return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };

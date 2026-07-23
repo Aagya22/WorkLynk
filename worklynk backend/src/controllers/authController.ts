@@ -17,7 +17,10 @@ import {
   verifyAccessToken,
   verifyRefreshToken
 } from '../utils/jwt';
-import { sendSecurityAlertEmail } from '../utils/email';
+import { sendSecurityAlertEmail, sendMail } from '../utils/email';
+
+//Activation links stay valid for 24 hours
+const ACTIVATION_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+[\]{};':",./<>?~`|\\-]).{12,}$/;
 
@@ -65,12 +68,33 @@ const verifyCaptcha = async (captchaText: unknown, captchaKey: unknown): Promise
   return null;
 };
 
+
+export const issueActivationToken = async (user: any): Promise<string> => {
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  user.activationToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+  user.activationTokenExpires = new Date(Date.now() + ACTIVATION_WINDOW_MS);
+  await user.save();
+
+  const activationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5000'}/activate?token=${rawToken}`;
+
+  sendMail(
+    user.email,
+    'Activate your Worklynk account',
+    `An administrator has created a Worklynk account for you.\n\n` +
+      `Set your password to activate it:\n${activationUrl}\n\n` +
+      `This link expires in 24 hours and can only be used once. ` +
+      `If you were not expecting this email, you can safely ignore it.`
+  );
+
+  return rawToken;
+};
+
 export const register = async (req: AuthenticatedRequest, res: Response) => {
-  const { email, password, role } = req.body;
+  const { email, role } = req.body;
 
   try {
-    if (!isValidString(email) || !isValidString(password) || !isValidString(role)) {
-      return res.status(400).json({ message: 'All fields (email, password, role) are required.' });
+    if (!isValidString(email) || !isValidString(role)) {
+      return res.status(400).json({ message: 'Both email and role are required.' });
     }
 
     const normalizedRole = role.toLowerCase();
@@ -83,19 +107,15 @@ export const register = async (req: AuthenticatedRequest, res: Response) => {
       return res.status(400).json({ message: 'A user with this email already exists.' });
     }
 
-    if (!passwordRegex.test(password)) {
-      return res.status(400).json({
-        message: 'Password must be at least 12 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
-      });
-    }
 
-    const passwordHash = await bcrypt.hash(password, 12);
     const newUser = await User.create({
       email,
-      passwordHash,
+      passwordHash: null,
       role: normalizedRole,
       isActive: true
     });
+
+    await issueActivationToken(newUser);
 
     const creatorId = req.user ? req.user._id : newUser._id;
     const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
@@ -110,7 +130,7 @@ export const register = async (req: AuthenticatedRequest, res: Response) => {
     });
 
     return res.status(201).json({
-      message: 'User registered successfully.',
+      message: 'Account created. An activation link has been emailed to the user.',
       user: {
         id: newUser._id,
         email: newUser.email,
@@ -237,6 +257,13 @@ export const login = async (req: AuthenticatedRequest, res: Response) => {
 
     if (!user.isActive) {
       return res.status(401).json({ message: 'This account has been deactivated.' });
+    }
+
+    // Awaiting activation: no password exists yet. Kept deliberately generic so
+    // this does not become an account-enumeration oracle.
+    if (!user.passwordHash) {
+      await bcrypt.compare(password, '$2b$12$DummyHashToPreventTimingEnumerationAttacksSecure123');
+      return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
     const isMatch = await user.matchPassword(password);
@@ -1087,6 +1114,92 @@ export const forgotPassword = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Confirms an activation link is still usable before the UI renders the form.
+ * The token itself is the secret, so echoing the address it belongs to is safe.
+ */
+export const verifyActivationToken = async (req: Request, res: Response) => {
+  const token = req.query.token as string;
+
+  try {
+    if (!isValidString(token)) {
+      return res.status(400).json({ message: 'Activation token is required.' });
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await User.findOne({
+      activationToken: hashedToken,
+      activationTokenExpires: { $gt: new Date() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'This activation link is invalid or has expired.' });
+    }
+
+    return res.status(200).json({ email: user.email, role: user.role });
+  } catch (error: any) {
+    console.error('Error verifying activation token:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+};
+
+/** Consumes an activation link and sets the account's first password. */
+export const activateAccount = async (req: Request, res: Response) => {
+  const { token, password } = req.body;
+  const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+
+  try {
+    if (!isValidString(token) || !isValidString(password)) {
+      return res.status(400).json({ message: 'Activation token and password are required.' });
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await User.findOne({
+      activationToken: hashedToken,
+      activationTokenExpires: { $gt: new Date() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'This activation link is invalid or has expired.' });
+    }
+
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message: 'Password must be at least 12 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
+      });
+    }
+
+    user.passwordHash = await bcrypt.hash(password, 12);
+    user.passwordChangedAt = new Date();
+    user.sessionVersion += 1;
+    user.activationToken = null;
+    user.activationTokenExpires = null;
+    user.failedLoginCount = 0;
+    user.lockedUntil = null;
+    await user.save();
+
+    await AuditLog.create({
+      userId: user._id,
+      actionType: 'ACCOUNT_ACTIVATION',
+      targetResource: `user:${user._id}`,
+      ipAddress: clientIP,
+      userAgent: req.headers['user-agent'] || 'unknown'
+    });
+
+    await Notification.create({
+      userId: user._id,
+      title: 'Account Activated',
+      message: 'Your account is now active. You can sign in with the password you just set.',
+      type: 'security'
+    });
+
+    return res.status(200).json({ message: 'Account activated. You can now log in.' });
+  } catch (error: any) {
+    console.error('Error activating account:', error);
+    return res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+};
+
 export const resetPassword = async (req: Request, res: Response) => {
   const { token, password } = req.body;
 
@@ -1125,6 +1238,9 @@ export const resetPassword = async (req: Request, res: Response) => {
     user.sessionVersion += 1;
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
+    // Recovering this way also completes activation, so retire any pending invite.
+    user.activationToken = null;
+    user.activationTokenExpires = null;
     user.failedLoginCount = 0;
     user.lockedUntil = null;
     await user.save();

@@ -5,7 +5,8 @@ import { Password } from './password.model';
 
 export interface IUser extends Document {
   email: string;
-  passwordHash: string;
+
+  passwordHash: string | null;
   role: 'employee' | 'hr_manager' | 'admin';
   isActive: boolean;
   lockedUntil: Date | null;
@@ -23,6 +24,8 @@ export interface IUser extends Document {
   lastFailedLogin: Date | null;
   resetPasswordToken: string | null;
   resetPasswordExpires: Date | null;
+  activationToken: string | null;
+  activationTokenExpires: Date | null;
   department: string | null;
   consentToken: string | null;
   consentTokenExpires: Date | null;
@@ -35,7 +38,7 @@ export interface IUser extends Document {
   isPasswordReused(newPassword: string): Promise<boolean>;
   incrementLoginAttempts(): Promise<IUser>;
   resetLoginAttempts(): Promise<IUser>;
-  addToPasswordHistory(newPasswordHash: string): Promise<void>;
+  addToPasswordHistory(previousPasswordHash: string | null): Promise<void>;
 }
 
 const UserSchema = new Schema<IUser>({
@@ -49,7 +52,7 @@ const UserSchema = new Schema<IUser>({
   },
   passwordHash: {
     type: String,
-    required: true
+    default: null
   },
   role: {
     type: String,
@@ -127,6 +130,14 @@ const UserSchema = new Schema<IUser>({
     type: Date,
     default: null
   },
+  activationToken: {
+    type: String,
+    default: null
+  },
+  activationTokenExpires: {
+    type: Date,
+    default: null
+  },
   consentToken: {
     type: String,
     default: null
@@ -153,19 +164,25 @@ UserSchema.virtual('isLocked').get(function (this: IUser) {
 
 // Compare password hashes using bcrypt
 UserSchema.methods.matchPassword = async function (this: IUser, enteredPassword: string): Promise<boolean> {
+  // Accounts awaiting activation have no password and can never match.
+  if (!this.passwordHash) return false;
   return bcrypt.compare(enteredPassword, this.passwordHash);
 };
 
 // Check if password age is past 90 days
 UserSchema.methods.isPasswordExpired = function (this: IUser): boolean {
+  // An unactivated account has no password to expire.
+  if (!this.passwordHash || !this.passwordChangedAt) return false;
   const ninetyDays = 90 * 24 * 60 * 60 * 1000;
   return (Date.now() - this.passwordChangedAt.getTime()) > ninetyDays;
 };
 
 // Check password history to reject reuse of last 5 passwords
 UserSchema.methods.isPasswordReused = async function (this: IUser, newPassword: string): Promise<boolean> {
-  const matchesCurrent = await bcrypt.compare(newPassword, this.passwordHash);
-  if (matchesCurrent) return true;
+  if (this.passwordHash) {
+    const matchesCurrent = await bcrypt.compare(newPassword, this.passwordHash);
+    if (matchesCurrent) return true;
+  }
 
   const history = await Password.find({ userId: this._id })
     .sort({ createdAt: -1 })
@@ -199,10 +216,13 @@ UserSchema.methods.resetLoginAttempts = async function (this: IUser): Promise<IU
 };
 
 // Save current password hash to history
-UserSchema.methods.addToPasswordHistory = async function (this: IUser, newPasswordHash: string): Promise<void> {
+UserSchema.methods.addToPasswordHistory = async function (this: IUser, previousPasswordHash: string | null): Promise<void> {
+  // Nothing to archive when the account is being activated for the first time.
+  if (!previousPasswordHash) return;
+
   await Password.create({
     userId: this._id,
-    passwordHash: this.passwordHash
+    passwordHash: previousPasswordHash
   });
 
   const historyCount = await Password.countDocuments({ userId: this._id });
