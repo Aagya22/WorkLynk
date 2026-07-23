@@ -315,14 +315,17 @@ export const HrEmployeeList: React.FC = () => {
         if (!canManage) {
           return <span className="text-xs ink-subtle">-</span>;
         }
+        const canIssuePayslip = !isAdmin;
         return (
           <div className="flex items-center space-x-2">
             <Button variant="primary" onClick={() => handleOpenProfileModal(row)}>
               Manage Profile
             </Button>
-            <Button variant="secondary" onClick={() => handleOpenPayslipModal(row)}>
-              Add Payslip
-            </Button>
+            {canIssuePayslip && (
+              <Button variant="secondary" onClick={() => handleOpenPayslipModal(row)}>
+                Add Payslip
+              </Button>
+            )}
             <Button
               variant="secondary"
               onClick={() => {

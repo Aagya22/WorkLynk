@@ -529,15 +529,15 @@ export const exportEmployeeData = async (req: AuthenticatedRequest, res: Respons
     }
 
     const isOwner = req.user!._id.toString() === targetUser._id.toString();
-    const isAdmin = req.user!.role === 'admin';
+    const isPrivileged = req.user!.role === 'admin' || req.user!.role === 'hr_manager';
 
-    // Owner, or admin with a consent token.
+    // Owner, or a privileged role holding a valid consent token.
     if (!isOwner) {
-      if (!isAdmin) {
+      if (!isPrivileged) {
         return res.status(403).json({ message: 'Access denied: Unauthorized export attempt.' });
       }
 
-      // If Admin, verify the one-time consent token
+      // Verify the one-time consent token issued by the data subject
       if (!consentToken || !targetUser.consentToken || targetUser.consentToken !== consentToken) {
         return res.status(403).json({ message: 'Access denied: Invalid or missing one-time consent token.' });
       }
