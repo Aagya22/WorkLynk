@@ -1,0 +1,99 @@
+name: Security
+
+# Automated security checks: static analysis, secret scanning and dependency /
+# infrastructure vulnerability scanning. Runs on pushes, pull requests, and
+# weekly so newly disclosed CVEs are caught even without a code change.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # --- Static Application Security Testing over our own code ---
+  codeql:
+    name: CodeQL (SAST)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:javascript-typescript
+
+  # --- Secret scanning across the full git history ---
+  secrets:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so secrets in old commits are caught
+
+      - name: Run Gitleaks
+        run: |
+          VERSION=8.18.4
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          # exit-code 0: report findings without failing the pipeline (advisory).
+          ./gitleaks detect --source . --redact --report-format sarif --report-path gitleaks.sarif --exit-code 0
+
+      - name: Upload Gitleaks results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gitleaks.sarif
+          category: gitleaks
+        continue-on-error: true
+
+  # --- Dependency CVEs, exposed secrets and Dockerfile/compose misconfigurations ---
+  trivy:
+    name: Dependency & IaC scan (Trivy)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Trivy
+        run: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.55.0
+
+      - name: Scan filesystem
+        run: |
+          trivy fs \
+            --scanners vuln,secret,misconfig \
+            --severity CRITICAL,HIGH \
+            --format sarif \
+            --output trivy.sarif \
+            --exit-code 0 \
+            .
+
+      - name: Upload Trivy results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
+          category: trivy
+        continue-on-error: true

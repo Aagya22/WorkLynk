@@ -1,0 +1,88 @@
+name: CI
+
+# Builds both projects and audits dependencies on every push and pull request.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & typecheck (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: backend
+            dir: worklynk backend
+          - project: frontend
+            dir: worklynk frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.dir }}
+        run: npm ci
+
+      # tsc (and vite for the frontend) is the real gate: a type error fails the build.
+      - name: Build
+        working-directory: ${{ matrix.dir }}
+        run: npm run build
+
+      # Style issues report but do not block the pipeline.
+      - name: Lint
+        if: matrix.project == 'frontend'
+        working-directory: ${{ matrix.dir }}
+        run: npm run lint
+        continue-on-error: true
+
+  audit:
+    name: Dependency audit (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: backend
+            dir: worklynk backend
+          - project: frontend
+            dir: worklynk frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.dir }}
+        run: npm ci
+
+      # Hard gate: a critical CVE in a runtime dependency fails the build.
+      - name: Audit runtime dependencies (critical gate)
+        working-directory: ${{ matrix.dir }}
+        run: npm audit --omit=dev --audit-level=critical
+
+      # Advisory: surface every advisory for triage without blocking.
+      - name: Audit all dependencies (report)
+        if: always()
+        working-directory: ${{ matrix.dir }}
+        run: npm audit || true
