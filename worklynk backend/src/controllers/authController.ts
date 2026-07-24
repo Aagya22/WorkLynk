@@ -280,16 +280,18 @@ export const login = async (req: AuthenticatedRequest, res: Response) => {
         metadata: { failedAttemptsCount: user.failedLoginCount }
       });
 
-      if (user.failedLoginCount >= 5) {
+      // Alert only once the account is actually locked (12 consecutive failures),
+      // so the notice matches the real lockout threshold.
+      if (user.isLocked) {
         sendSecurityAlertEmail(
           user.email,
           'Your account has been locked',
-          'Your Worklynk account has been locked for 15 minutes due to 5 consecutive failed login attempts. If this was not you, please contact system administration.'
+          'Your Worklynk account has been locked for 15 minutes due to 12 consecutive failed login attempts. If this was not you, please contact system administration.'
         );
         sendSecurityAlertEmail(
           'admin@worklynk.local',
           'Security Warning: User account lockout triggered',
-          `User: ${user.email} has been locked out after 5 failed login attempts.\nIP Address: ${clientIP}`
+          `User: ${user.email} has been locked out after 12 failed login attempts.\nIP Address: ${clientIP}`
         );
       }
 

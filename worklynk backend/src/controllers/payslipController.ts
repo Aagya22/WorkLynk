@@ -1,5 +1,4 @@
 import { Response } from 'express';
-import mongoose from 'mongoose';
 import PDFDocument from 'pdfkit';
 import { Payslip } from '../models/payslip.model';
 import { User } from '../models/user.model';
@@ -47,21 +46,14 @@ export const createPayslip = async (req: AuthenticatedRequest, res: Response) =>
     return res.status(400).json({ message: 'Invalid month format. Please use YYYY-MM.' });
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    const employee = await User.findById(employeeId).session(session);
+    const employee = await User.findById(employeeId);
     if (!employee) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(404).json({ message: 'Employee not found.' });
     }
 
-    const duplicate = await Payslip.findOne({ employeeId, month }).session(session);
+    const duplicate = await Payslip.findOne({ employeeId, month });
     if (duplicate) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ message: 'A payslip for this employee and month already exists.' });
     }
 
@@ -73,23 +65,17 @@ export const createPayslip = async (req: AuthenticatedRequest, res: Response) =>
     const other = parseFloat(otherDeductions);
 
     if (isNaN(basic) || isNaN(overtime) || isNaN(bns) || isNaN(tax) || isNaN(ni) || isNaN(other)) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ message: 'Invalid numeric input values.' });
     }
 
     // Block negative values
     if (basic < 0 || overtime < 0 || bns < 0 || tax < 0 || ni < 0 || other < 0) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ message: 'Negative salary or deduction values are not permitted.' });
     }
 
     // Auto-calculate net salary and block negative net salary
     const net = basic + overtime + bns - (tax + ni + other);
     if (net < 0) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ message: 'Net salary cannot be negative. Please adjust deductions.' });
     }
 
@@ -107,20 +93,19 @@ export const createPayslip = async (req: AuthenticatedRequest, res: Response) =>
       createdBy: req.user!._id
     });
 
-    await payslip.save({ session });
+    // The unique {employeeId, month} index is the atomic guard against a race
+    // between the duplicate check above and this save.
+    await payslip.save();
 
     const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
-    await AuditLog.create([{
+    await AuditLog.create({
       userId: req.user!._id,
       actionType: 'PAYSLIP_CREATION',
       targetResource: `payslip:${payslip._id}`,
       ipAddress: clientIP,
       userAgent: req.headers['user-agent'] || 'unknown',
       metadata: { targetEmployeeId: employeeId, month }
-    }], { session });
-
-    await session.commitTransaction();
-    session.endSession();
+    });
 
     // Notify the employee about the new payslip publication
     await Notification.create({
@@ -132,9 +117,12 @@ export const createPayslip = async (req: AuthenticatedRequest, res: Response) =>
 
     return res.status(201).json({ message: 'Payslip created successfully.', payslip });
   } catch (error: any) {
-    await session.abortTransaction();
-    session.endSession();
-    console.error('Error processing payroll transaction:', error);
+    // A concurrent create for the same employee+month trips the unique index;
+    // surface it as a clean duplicate 400 rather than a generic 500.
+    if (error?.code === 11000) {
+      return res.status(400).json({ message: 'A payslip for this employee and month already exists.' });
+    }
+    console.error('Error creating payslip:', error);
     return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
@@ -300,20 +288,13 @@ export const updatePayslip = async (req: AuthenticatedRequest, res: Response) =>
     return res.status(400).json({ message: 'A mandatory modification reason is required.' });
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    const payslip = await Payslip.findById(id).session(session);
+    const payslip = await Payslip.findById(id);
     if (!payslip) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(404).json({ message: 'Payslip not found.' });
     }
 
     if (isPayslipLocked(payslip.createdAt)) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ message: `This payslip is locked. Payslips can only be edited within ${PAYSLIP_EDIT_WINDOW_DAYS} days of creation.` });
     }
 
@@ -337,21 +318,15 @@ export const updatePayslip = async (req: AuthenticatedRequest, res: Response) =>
     const other = otherDeductions !== undefined ? parseFloat(otherDeductions) : parseFloat(payslip.otherDeductions);
 
     if (isNaN(basic) || isNaN(overtime) || isNaN(bns) || isNaN(tax) || isNaN(ni) || isNaN(other)) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ message: 'Invalid numeric input values.' });
     }
 
     if (basic < 0 || overtime < 0 || bns < 0 || tax < 0 || ni < 0 || other < 0) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ message: 'Negative salary or deduction values are not permitted.' });
     }
 
     const net = basic + overtime + bns - (tax + ni + other);
     if (net < 0) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ message: 'Net salary cannot be negative.' });
     }
 
@@ -364,26 +339,21 @@ export const updatePayslip = async (req: AuthenticatedRequest, res: Response) =>
     payslip.netSalary = net.toFixed(2);
     if (notes !== undefined) payslip.notes = sanitizeInput(notes);
 
-    await payslip.save({ session });
+    await payslip.save();
 
     const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
-    await AuditLog.create([{
+    await AuditLog.create({
       userId: req.user!._id,
       actionType: 'PAYSLIP_UPDATE',
       targetResource: `payslip:${payslip._id}`,
       ipAddress: clientIP,
       userAgent: req.headers['user-agent'] || 'unknown',
       metadata: { reason: sanitizeInput(reason), oldValues }
-    }], { session });
-
-    await session.commitTransaction();
-    session.endSession();
+    });
 
     return res.status(200).json({ message: 'Payslip updated successfully.', payslip });
   } catch (error: any) {
-    await session.abortTransaction();
-    session.endSession();
-    console.error('Error updating payslip payroll transaction:', error);
+    console.error('Error updating payslip:', error);
     return res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };
