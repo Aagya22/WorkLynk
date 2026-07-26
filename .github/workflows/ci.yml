@@ -45,13 +45,6 @@ jobs:
         working-directory: ${{ matrix.dir }}
         run: npm run build
 
-      # Style issues report but do not block the pipeline.
-      - name: Lint
-        if: matrix.project == 'frontend'
-        working-directory: ${{ matrix.dir }}
-        run: npm run lint
-        continue-on-error: true
-
   audit:
     name: Dependency audit (${{ matrix.project }})
     runs-on: ubuntu-latest
