@@ -1,8 +1,5 @@
 name: Security
 
-# Automated security checks: static analysis, secret scanning and dependency /
-# infrastructure vulnerability scanning. Runs on pushes, pull requests, and
-# weekly so newly disclosed CVEs are caught even without a code change.
 on:
   push:
     branches: [main]
@@ -79,7 +76,11 @@ jobs:
 
       - name: Install Trivy
         run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.55.0
+          TRIVY_VERSION=0.72.0
+          curl -sfL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" -o trivy.tar.gz
+          tar -xzf trivy.tar.gz trivy
+          sudo mv trivy /usr/local/bin/trivy
+          rm -f trivy.tar.gz
           trivy --version
 
 
